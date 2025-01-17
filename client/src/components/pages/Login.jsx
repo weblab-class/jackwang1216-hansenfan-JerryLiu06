@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { UserContext } from "../App";
 import "./Login.css";
+import logo from "../../public/icons/logo3.png";
 
 const Login = () => {
   const { handleLogin } = useContext(UserContext);
@@ -13,7 +14,7 @@ const Login = () => {
       <div className="relative z-10 max-w-md w-full space-y-12">
         {/* Logo */}
         <div className="flex flex-col items-center space-y-6">
-          <img src="/boldly-logo.png" alt="Boldly Logo" className="w-32 h-32 animate-float" />
+          <img src={logo} alt="Boldly Logo" className="w-60 h-30 animate-float" />
           <h1 className="text-5xl font-bold text-white tracking-tight">
             boldly<span className="text-blue-500">.</span>
           </h1>
