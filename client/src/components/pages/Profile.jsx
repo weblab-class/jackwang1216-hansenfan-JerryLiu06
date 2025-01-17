@@ -4,8 +4,8 @@ import { UserContext } from "../App";
 import { Trophy, Medal, Target, Calendar } from "lucide-react";
 import "./Profile.css";
 
-const Profile = () => {
-  const { userId } = useContext(UserContext);
+const Profile = (props) => {
+  const { userId, user } = useContext(UserContext);
 
   const achievements = [
     { icon: Trophy, color: "from-yellow-400 to-yellow-600" },
@@ -36,13 +36,13 @@ const Profile = () => {
           <div className="flex flex-col items-center mb-12 relative">
             {/* Background Glow */}
             <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" style={{ height: '50%' }} />
-            
+
             {/* Profile Content */}
             <div className="relative z-10 flex flex-col items-center">
               <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1">
                 <div className="w-full h-full rounded-full bg-gray-900 border-4 border-gray-900" />
               </div>
-              <h1 className="text-4xl font-bold mt-6 mb-2">John Doe</h1>
+              <h1 className="text-4xl font-bold mt-6 mb-2">{user ? user.name : "Profile"}</h1>
               <p className="text-gray-400">Joined January 2025</p>
             </div>
           </div>

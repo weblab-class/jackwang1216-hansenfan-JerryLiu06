@@ -16,11 +16,9 @@ const Login = () => {
         <div className="flex flex-col items-center space-y-6">
           <img src={logo} alt="Boldly Logo" className="w-60 h-30 animate-float" />
           <h1 className="text-5xl font-bold text-white tracking-tight">
-            boldly<span className="text-blue-500">.</span>
+            <span>boldly.</span>
           </h1>
-          <p className="text-gray-400 text-center text-lg">
-            Challenge yourself. Grow together.
-          </p>
+          <p className="text-center text-lg">Challenge yourself. Grow together.</p>
         </div>
 
         {/* Login Card */}

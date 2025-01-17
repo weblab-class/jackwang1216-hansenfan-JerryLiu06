@@ -3,4 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { Link } from "@reach/router";
 import { User, Users, Send, LogOut } from "lucide-react";
 
-
+const SinglePost = (props) => {
+  
+}
