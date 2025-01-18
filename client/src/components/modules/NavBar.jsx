@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { User, Users, Send, LogOut, Circlehelp } from "lucide-react";
+import { User, Users, Send, LogOut, CircleHelp } from "lucide-react";
 import { UserContext } from "../App";
 import logo from "../../public/icons/logo3.png";
 
@@ -36,7 +36,7 @@ const NavBar = () => {
           <Send className="w-6 h-6" />
         </NavLink>
         <NavLink to="/howtoplay" isActive={isActive("/howtoplay")}>
-          <Circlehelp className="w-6 h-6" />
+          <CircleHelp className="w-6 h-6" />
         </NavLink>
       </div>
 
