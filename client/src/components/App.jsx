@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 import Challenges from "./pages/Challenges";
+import HowToPlay from "./pages/HowToPlay";
 
 export const UserContext = createContext(null);
 
@@ -19,6 +20,8 @@ export const UserContext = createContext(null);
 const App = () => {
   const [userId, setUserId] = useState(undefined);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     get("/api/whoami")
@@ -31,6 +34,10 @@ const App = () => {
       })
       .catch((err) => {
         console.log("Failed to get user:", err);
+        setError(err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, []);
 
@@ -46,6 +53,7 @@ const App = () => {
       })
       .catch((err) => {
         console.log("Failed to login:", err);
+        setError(err);
       });
   };
 
@@ -62,6 +70,24 @@ const App = () => {
     handleLogout,
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-2xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-2xl">Error: {error.message}</div>
+      </div>
+    );
+  }
+
   return (
     <UserContext.Provider value={authContextValue}>
       <div className="min-h-screen bg-black text-white">
@@ -70,6 +96,7 @@ const App = () => {
             <Route path="/" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/challenges" element={<Challenges />} />
+            <Route path="/howtoplay" element={<HowToPlay />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         ) : (
