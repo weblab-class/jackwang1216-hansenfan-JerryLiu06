@@ -18,7 +18,7 @@ const NavBar = () => {
         <img
           src={logo}
           alt="Boldly Logo"
-          className="w-12 h-12 relative hover:scale-110 transition-transform"
+          className="h-12 relative hover:scale-110 transition-transform"
         />
       </Link>
 
