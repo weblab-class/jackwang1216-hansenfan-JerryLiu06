@@ -36,7 +36,7 @@ const NavBar = () => {
           <Send className="w-6 h-6" />
         </NavLink>
         <NavLink to="/howtoplay" isActive={isActive("/howtoplay")}>
-          <Send className="w-6 h-6" />
+          <CircleHelp className="w-6 h-6" />
         </NavLink>
       </div>
 
