@@ -22,7 +22,7 @@ const HowToPlay = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-blue-900 to-gray-900 relative overflow-hidden">
       <div className="particle-container absolute inset-0" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,100,255,0.1),transparent_50%)]" />
-      
+
       <h1 className="text-6xl mb-12 text-center font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 animate-gradient z-10">
         Welcome to Boldly!
       </h1>
