@@ -52,7 +52,7 @@ const Login = () => {
             <InteractiveLogo src={logo} alt="Boldly Logo" className="w-48 h-24 object-contain" />
             <div className="text-center space-y-3">
               <h1 className="text-4xl font-bold text-white">
-                Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Boldly</span>
+                Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">Boldly.</span>
               </h1>
               <p className="text-lg text-gray-400">
                 Challenge yourself. Grow together.

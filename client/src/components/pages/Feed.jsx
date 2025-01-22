@@ -170,6 +170,21 @@ const NewPostForm = ({ onSubmit }) => {
   const [content, setContent] = useState("");
   const [image, setImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completedChallenges, setCompletedChallenges] = useState([]);
+  const [selectedChallenge, setSelectedChallenge] = useState("");
+
+  useEffect(() => {
+    // Fetch completed challenges when component mounts
+    const loadCompletedChallenges = async () => {
+      try {
+        const challenges = await get("/api/challenges/completed");
+        setCompletedChallenges(challenges);
+      } catch (err) {
+        console.error("Error loading completed challenges:", err);
+      }
+    };
+    loadCompletedChallenges();
+  }, []);
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -182,14 +197,21 @@ const NewPostForm = ({ onSubmit }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!content.trim() || !image) return;
+    if (!content.trim() || !image || !selectedChallenge) return;
 
     setIsSubmitting(true);
     try {
       const imageUrl = await convertToBase64(image);
-      await onSubmit({ content, imageUrl });
+      const challenge = completedChallenges.find(c => c._id === selectedChallenge);
+      await onSubmit({ 
+        content, 
+        imageUrl, 
+        challenge: selectedChallenge,
+        challengeTitle: challenge.title
+      });
       setContent("");
       setImage(null);
+      setSelectedChallenge("");
     } catch (err) {
       console.error("Error creating post:", err);
     } finally {
@@ -207,6 +229,24 @@ const NewPostForm = ({ onSubmit }) => {
           className="w-full px-4 py-3 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
           rows="3"
         />
+        <div className="space-y-3">
+          <select
+            value={selectedChallenge}
+            onChange={(e) => setSelectedChallenge(e.target.value)}
+            className="w-full px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+          >
+            <option value="">Select a completed challenge</option>
+            {completedChallenges.map((challenge) => (
+              <option key={challenge._id} value={challenge._id}>
+                {challenge.title}
+              </option>
+            ))}
+          </select>
+          {!selectedChallenge && content.trim() && (
+            <p className="text-yellow-500 text-sm">Please select a challenge for your post</p>
+          )}
+        </div>
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -220,7 +260,7 @@ const NewPostForm = ({ onSubmit }) => {
           </button>
           <button
             type="submit"
-            disabled={!content.trim() || !image || isSubmitting}
+            disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
             className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Post

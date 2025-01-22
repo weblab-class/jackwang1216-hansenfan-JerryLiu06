@@ -110,32 +110,43 @@ router.get("/posts", (req, res) => {
 });
 
 // Create a new post
-router.post("/post", auth.ensureLoggedIn, (req, res) => {
+router.post("/post", auth.ensureLoggedIn, async (req, res) => {
   console.log("POST /api/post called with body:", req.body);
   console.log("User:", req.user);
 
-  if (!req.body.content) {
-    console.log("Missing content in request");
-    return res.status(400).json({ error: "Content is required" });
+  if (!req.body.content || !req.body.challenge) {
+    console.log("Missing required fields in request");
+    return res.status(400).json({ error: "Content and challenge are required" });
   }
 
-  const newPost = new Post({
-    creator_id: req.user._id,
-    creator_name: req.user.name,
-    content: req.body.content,
-    imageUrl: req.body.imageUrl || "",
-  });
-
-  newPost
-    .save()
-    .then((post) => {
-      console.log("Saved new post:", post);
-      res.json(post);
-    })
-    .catch((err) => {
-      console.error("Error saving post:", err);
-      res.status(500).json({ error: "Could not save post", details: err.message });
+  try {
+    // Verify that the challenge exists and belongs to the user
+    const challenge = await Challenge.findOne({
+      _id: req.body.challenge,
+      creator: req.user._id,
+      completed: true
     });
+
+    if (!challenge) {
+      return res.status(400).json({ error: "Invalid or incomplete challenge selected" });
+    }
+
+    const newPost = new Post({
+      creator_id: req.user._id,
+      creator_name: req.user.name,
+      content: req.body.content,
+      imageUrl: req.body.imageUrl || "",
+      challenge: challenge._id,
+      challengeTitle: challenge.title
+    });
+
+    const savedPost = await newPost.save();
+    console.log("Saved new post:", savedPost);
+    res.json(savedPost);
+  } catch (err) {
+    console.error("Error saving post:", err);
+    res.status(500).json({ error: "Could not save post", details: err.message });
+  }
 });
 
 // Like a post
@@ -455,6 +466,20 @@ router.get("/challenges/my", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error getting user challenges:", err);
     res.status(500).send({ error: "Could not get user challenges" });
+  }
+});
+
+// Get user's completed challenges
+router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      creator: req.user._id,
+      completed: true
+    }).sort({ completedAt: -1 });
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting completed challenges:", err);
+    res.status(500).send({ error: "Failed to get completed challenges" });
   }
 });
 
