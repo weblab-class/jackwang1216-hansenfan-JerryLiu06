@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
-import { UserContext } from "../App";
 import { get, post } from "../../utilities";
+import { Search, Send, UserPlus, Check, X } from "lucide-react";
+import NavBar from "../modules/NavBar.jsx";
 import { socket } from "../../client-socket";
-import NavBar from "../modules/NavBar";
+import { UserContext } from "../App";
 
 const Chat = () => {
   const { user } = useContext(UserContext);
@@ -136,176 +137,170 @@ const Chat = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen pt-16 bg-[#0A0B0F]">
       <NavBar />
-      <div className="flex min-h-screen bg-gradient-to-b from-gray-900 via-blue-900/20 to-gray-900">
-        <div className="flex-1 pl-24">
-          <div className="container mx-auto p-6">
-            <div className="flex gap-6 h-[calc(100vh-4rem)]">
-              {/* Left Sidebar */}
-              <div className="w-80 flex flex-col space-y-4">
-                {/* Search Users */}
-                <div className="bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm">
-                  <h2 className="text-xl font-bold mb-4 text-white">Find Friends</h2>
-                  <div className="space-y-2">
-                    <div className="flex gap-1">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                        placeholder="Search by username..."
-                        className="flex-1 bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        onClick={handleSearch}
-                        className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 whitespace-nowrap"
-                      >
-                        Search
-                      </button>
-                    </div>
-                    {searchResults.length > 0 && (
-                      <div className="mt-4 space-y-2 max-h-40 overflow-y-auto">
-                        {searchResults.map((result) => (
-                          <div key={result._id} className="flex items-center justify-between p-2 rounded-lg bg-gray-700/50">
-                            <span className="text-white">{result.name}</span>
-                            {result.isFriend ? (
-                              <span className="text-green-400 text-sm">Friend</span>
-                            ) : result.requestSent ? (
-                              <span className="text-gray-400 text-sm">Request Sent</span>
-                            ) : (
-                              <button
-                                onClick={() => sendFriendRequest(result._id)}
-                                className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700"
-                              >
-                                Add Friend
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-9rem)]">
+          {/* Left Sidebar - Friends List */}
+          <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden">
+            <div className="p-4 border-b border-white/10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search friends..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                  className="w-full pl-10 pr-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-2 space-y-1 overflow-y-auto h-[calc(100%-4rem)]">
+              {friends.map((friend) => (
+                <button
+                  key={friend._id}
+                  onClick={() => setSelectedUser(friend)}
+                  className={`w-full px-4 py-3 rounded-lg flex items-center space-x-3 transition-colors ${
+                    selectedUser?._id === friend._id
+                      ? "bg-white/10 text-white"
+                      : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
+                    {friend.name[0]}
                   </div>
+                  <span className="truncate">{friend.name}</span>
+                </button>
+              ))}
+              {friends.length === 0 && (
+                <p className="text-center text-gray-400 py-4">No friends yet</p>
+              )}
+            </div>
+          </div>
+
+          {/* Main Chat Area */}
+          <div className="col-span-6 bg-[#12141A] rounded-xl border border-white/10 flex flex-col">
+            {selectedUser ? (
+              <>
+                {/* Chat Header */}
+                <div className="p-4 border-b border-white/10">
+                  <h2 className="text-lg font-medium text-white">{selectedUser.name}</h2>
                 </div>
 
-                {/* Friend Requests */}
-                {friendRequests.length > 0 && (
-                  <div className="bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm">
-                    <h2 className="text-xl font-bold mb-4 text-white">Friend Requests</h2>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {friendRequests.map((request) => (
-                        <div key={request._id} className="flex items-center justify-between p-2 rounded-lg bg-gray-700/50">
-                          <span className="text-white">{request.name}</span>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => acceptFriendRequest(request._id)}
-                              className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-700"
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => rejectFriendRequest(request._id)}
-                              className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-700"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Friends List */}
-                <div className="bg-gray-800/50 rounded-lg p-4 backdrop-blur-sm flex-1 min-h-0">
-                  <h2 className="text-xl font-bold mb-4 text-white">Friends</h2>
-                  <div className="space-y-2 overflow-y-auto h-full">
-                    {friends.map((friend) => (
-                      <button
-                        key={friend._id}
-                        onClick={() => setSelectedUser(friend)}
-                        className={`w-full text-left p-3 rounded-lg transition-colors ${
-                          selectedUser?._id === friend._id
-                            ? "bg-blue-600 text-white"
-                            : "hover:bg-gray-700/50 text-gray-300"
+                {/* Messages */}
+                <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                  {messages.map((message) => (
+                    <div
+                      key={message._id}
+                      className={`flex ${
+                        message.sender._id === user._id ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                          message.sender._id === user._id
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                            : "bg-white/5 text-gray-200"
                         }`}
                       >
-                        {friend.name}
-                      </button>
-                    ))}
-                    {friends.length === 0 && (
-                      <p className="text-gray-400 text-center">No friends yet</p>
-                    )}
+                        <p>{message.content}</p>
+                        <p className="text-xs opacity-75 mt-1">
+                          {new Date(message.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message Input */}
+                <form onSubmit={handleSend} className="p-4 border-t border-white/10">
+                  <div className="flex space-x-4">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 bg-white/5 text-white placeholder-gray-400 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim()}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>Send</span>
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                Select a friend to start chatting
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar - Friend Requests */}
+          <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden">
+            <div className="p-4 border-b border-white/10">
+              <h3 className="text-lg font-medium text-white">Friend Requests</h3>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {friendRequests.map((request) => (
+                <div
+                  key={request._id}
+                  className="p-4 bg-white/5 rounded-lg space-y-3"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
+                      {request.sender.name[0]}
+                    </div>
+                    <span className="text-white">{request.sender.name}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => acceptFriendRequest(request._id)}
+                      className="flex-1 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => rejectFriendRequest(request._id)}
+                      className="flex-1 px-3 py-1.5 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      Decline
+                    </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Chat Area */}
-              <div className="flex-1 bg-gray-800/50 rounded-lg backdrop-blur-sm flex flex-col">
-                {selectedUser ? (
-                  <>
-                    {/* Chat Header */}
-                    <div className="p-4 border-b border-gray-700">
-                      <h3 className="text-lg font-semibold text-white">{selectedUser.name}</h3>
+              ))}
+              {searchResults.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">Search Results</h4>
+                  {searchResults.map((user) => (
+                    <div
+                      key={user._id}
+                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg mb-2"
+                    >
+                      <span className="text-white">{user.name}</span>
+                      <button
+                        onClick={() => sendFriendRequest(user._id)}
+                        className="p-2 text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                      </button>
                     </div>
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {messages.map((message) => (
-                        <div
-                          key={message._id}
-                          className={`flex ${
-                            message.sender._id === user._id ? "justify-end" : "justify-start"
-                          }`}
-                        >
-                          <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
-                              message.sender._id === user._id
-                                ? "bg-blue-600 text-white"
-                                : "bg-gray-700 text-gray-200"
-                            }`}
-                          >
-                            <p>{message.content}</p>
-                            <p className="text-xs opacity-75 mt-1">
-                              {new Date(message.timestamp).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* Message Input */}
-                    <form onSubmit={handleSend} className="p-4 border-t border-gray-700">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          placeholder="Type a message..."
-                          className="flex-1 bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          type="submit"
-                          disabled={!newMessage.trim()}
-                          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Send
-                        </button>
-                      </div>
-                    </form>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-gray-500">
-                    Select a friend to start chatting
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

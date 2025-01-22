@@ -1,207 +1,167 @@
-import React, { useEffect, useState } from "react";
-import NavBar from "../modules/NavBar";
-import { Trophy, Star, Clock, Users as UsersIcon, ArrowRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { get, post } from "../../utilities";
+import { Trophy, Star, Clock, Users, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import NavBar from "../modules/NavBar.jsx";
 
-const Challenges = () => {
+const ChallengeCard = ({ challenge, onJoin, userId }) => {
+  const isJoined = challenge.participants.includes(userId);
+
+  return (
+    <div className="relative group">
+      <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
+      <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center">
+            <Trophy className="w-6 h-6 text-purple-400" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Star className="w-5 h-5 text-yellow-400" />
+            <span className="text-white font-medium">{challenge.points} pts</span>
+          </div>
+        </div>
+        
+        <h3 className="text-xl font-bold text-white mb-2">{challenge.title}</h3>
+        <p className="text-gray-400 mb-6">{challenge.description}</p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-400">{challenge.duration}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Users className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-400">{challenge.participants.length} joined</span>
+            </div>
+          </div>
+          
+          <button
+            onClick={() => onJoin(challenge._id)}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+              isJoined
+                ? "bg-purple-500/20 text-purple-400"
+                : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+            }`}
+            disabled={isJoined}
+          >
+            <span>{isJoined ? "Joined" : "Join Challenge"}</span>
+            {!isJoined && <ArrowRight className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Challenges = ({ userId }) => {
   const [challenges, setChallenges] = useState([]);
-  const [activeTab, setActiveTab] = useState("all"); // all, my, completed
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const createParticle = () => {
-      const particle = document.createElement("div");
-      particle.className = "particle";
-      particle.style.left = Math.random() * 100 + "vw";
-      particle.style.animationDuration = Math.random() * 3 + 2 + "s";
-      document.querySelector(".particle-container").appendChild(particle);
-      setTimeout(() => particle.remove(), 5000);
-    };
-
-    const particleInterval = setInterval(createParticle, 200);
-    return () => clearInterval(particleInterval);
-  }, []);
+  const [filter, setFilter] = useState("all");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadChallenges();
-  }, [activeTab]);
+  }, [filter]);
 
   const loadChallenges = async () => {
     try {
-      setLoading(true);
-      const endpoint = activeTab === "my" ? "/api/challenges/my" : "/api/challenges";
-      const challengesData = await get(endpoint);
-      setChallenges(challengesData);
+      const data = await get("/api/challenges", { filter });
+      setChallenges(data);
+      setError(null);
     } catch (err) {
       console.error("Failed to load challenges:", err);
-    } finally {
-      setLoading(false);
+      setError("Failed to load challenges. Please try again.");
     }
   };
 
-  const generateChallenge = async (difficulty) => {
+  const handleJoinChallenge = async (challengeId) => {
     try {
-      console.log("Generating challenge with difficulty:", difficulty);
-      setLoading(true);
-      const newChallenge = await post("/api/challenges/generate", { difficulty });
-      console.log("Received new challenge:", newChallenge);
-      setChallenges((prev) => [newChallenge, ...prev]);
-    } catch (err) {
-      console.error("Failed to generate challenge:", err);
-      alert("Failed to generate challenge. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const joinChallenge = async (challengeId) => {
-    try {
-      await post(`/api/challenges/${challengeId}/join`);
+      await post("/api/challenges/join", { challengeId });
       loadChallenges();
+      setError(null);
     } catch (err) {
       console.error("Failed to join challenge:", err);
+      setError("Failed to join challenge. Please try again.");
+    }
+  };
+
+  const handleGenerateChallenge = async () => {
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const response = await post("/api/challenges/generate");
+      setChallenges((prev) => [response, ...prev]);
+    } catch (err) {
+      console.error("Failed to generate challenge:", err);
+      if (err.response?.data?.error?.includes("OpenAI")) {
+        setError("OpenAI API key not configured. Please check server settings.");
+      } else {
+        setError("Failed to generate challenge. Please try again.");
+      }
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900/20 to-gray-900 relative overflow-hidden">
-      <div className="particle-container absolute inset-0" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,100,255,0.1),transparent_50%)]" />
+    <div className="min-h-screen pt-16 bg-[#0A0B0F]">
       <NavBar />
-      
-      <main className="ml-24 p-8 relative z-10">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 animate-gradient mb-4">
-              Active Challenges
-            </h1>
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => setActiveTab("all")}
-                className={`px-6 py-3 ${
-                  activeTab === "all" 
-                    ? "bg-gradient-to-r from-blue-600 to-blue-800" 
-                    : "bg-gray-800/50 backdrop-blur-sm"
-                } text-white rounded-xl hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg`}
-              >
-                All Challenges
-              </button>
-              <button 
-                onClick={() => setActiveTab("my")}
-                className={`px-6 py-3 ${
-                  activeTab === "my" 
-                    ? "bg-gradient-to-r from-blue-600 to-blue-800" 
-                    : "bg-gray-800/50 backdrop-blur-sm"
-                } text-gray-300 rounded-xl hover:bg-gray-700/50 transition-all border border-white/5`}
-              >
-                My Challenges
-              </button>
-              <button
-                onClick={() => generateChallenge("Intermediate")}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white rounded-xl hover:from-green-500 hover:to-green-700 transition-all shadow-lg"
-                disabled={loading}
-              >
-                Generate New Challenge
-              </button>
-            </div>
-          </div>
-
-          {/* Challenge Grid */}
-          {loading ? (
-            <div className="text-center text-gray-400">Loading challenges...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {challenges.map((challenge) => (
-                <div
-                  key={challenge._id}
-                  className="group relative"
-                >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-300"></div>
-                  <div className="relative bg-gray-900/50 backdrop-blur-xl rounded-2xl p-6 hover:bg-gray-800/50 transition-all">
-                    {/* Challenge Header */}
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <h2 className="text-2xl font-bold text-white mb-2">{challenge.title}</h2>
-                        <p className="text-gray-400">{challenge.description}</p>
-                      </div>
-                      <div className="flex items-center space-x-2 bg-yellow-500/10 px-3 py-1 rounded-full">
-                        <Trophy className="w-6 h-6 text-yellow-500" />
-                        <span className="text-yellow-500 font-medium">{challenge.xpReward} XP</span>
-                      </div>
-                    </div>
-
-                    {/* Challenge Stats */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center space-x-6 text-sm text-gray-400">
-                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                          <Clock className="w-4 h-4 mr-2" />
-                          <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                          <UsersIcon className="w-4 h-4 mr-2" />
-                          <span>{challenge.participants?.length || 0} participants</span>
-                        </div>
-                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                          <Star className="w-4 h-4 mr-2 text-yellow-500" />
-                          <span>{challenge.difficulty}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Join Button */}
-                    <button
-                      onClick={() => joinChallenge(challenge._id)}
-                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg flex items-center justify-center space-x-2"
-                    >
-                      <span>Join Challenge</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">
+            Daily Challenges
+          </h1>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
+            Push your boundaries and earn rewards by completing these exciting challenges.
+          </p>
+          {error && (
+            <div className="flex items-center justify-center text-red-400 mb-6">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              <span>{error}</span>
             </div>
           )}
+          <button
+            onClick={handleGenerateChallenge}
+            disabled={isGenerating}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            {isGenerating ? "Generating..." : "Generate New Challenge"}
+          </button>
         </div>
-      </main>
-      <style jsx>{`
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-          background-size: 200% 200%;
-        }
-        .particle {
-          position: absolute;
-          width: 2px;
-          height: 2px;
-          background: rgba(255, 255, 255, 0.5);
-          pointer-events: none;
-          animation: float linear infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .particle-container {
-          z-index: 0;
-        }
-      `}</style>
+
+        {/* Filters */}
+        <div className="flex justify-center mb-12">
+          <div className="inline-flex bg-[#12141A] rounded-lg p-1">
+            {["all", "active", "completed"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  filter === f
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Challenge Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {challenges.map((challenge) => (
+            <ChallengeCard
+              key={challenge._id}
+              challenge={challenge}
+              onJoin={handleJoinChallenge}
+              userId={userId}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

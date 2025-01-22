@@ -1,141 +1,116 @@
-import React, { useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { House } from "lucide-react";
-import logo from "../../public/icons/logo3.png";
+import React from "react";
+import { Trophy, Users, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import NavBar from "../modules/NavBar.jsx";
+
+const FeatureCard = ({ icon: Icon, title, description }) => (
+  <div className="relative group">
+    <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
+    <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-6">
+      <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center mb-4">
+        <Icon className="w-6 h-6 text-purple-400" />
+      </div>
+      <h3 className="text-xl font-semibold text-white mb-3">{title}</h3>
+      <p className="text-gray-400 leading-relaxed">{description}</p>
+    </div>
+  </div>
+);
 
 const HowToPlay = () => {
-  useEffect(() => {
-    const createParticle = () => {
-      const particle = document.createElement("div");
-      particle.className = "particle";
-      particle.style.left = Math.random() * 100 + "vw";
-      particle.style.animationDuration = Math.random() * 3 + 2 + "s";
-      document.querySelector(".particle-container").appendChild(particle);
-      setTimeout(() => particle.remove(), 5000);
-    };
-
-    const particleInterval = setInterval(createParticle, 200);
-    return () => clearInterval(particleInterval);
-  }, []);
+  const features = [
+    {
+      icon: Trophy,
+      title: "Take on Challenges",
+      description: "Push your boundaries with exciting challenges like talking to strangers or trying new activities. Each completed challenge earns you points based on difficulty."
+    },
+    {
+      icon: Users,
+      title: "Connect with Friends",
+      description: "Build your network of fellow adventurers. Compete on the leaderboard and see who's the ultimate daredevil in your circle."
+    },
+    {
+      icon: MessageCircle,
+      title: "Share Your Journey",
+      description: "Document your experiences through posts and photos. Get support and encouragement from your friends as you grow together."
+    },
+    {
+      icon: Sparkles,
+      title: "Level Up",
+      description: "Earn points, unlock achievements, and watch your confidence grow. The bolder your moves, the bigger your rewards."
+    }
+  ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 via-blue-900 to-gray-900 relative overflow-hidden">
-      <div className="particle-container absolute inset-0" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,100,255,0.1),transparent_50%)]" />
-
-      <h1 className="text-6xl mb-12 text-center font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 animate-gradient z-10">
-        Welcome to Boldly!
-      </h1>
-
-      <div className="relative bg-gradient-to-br from-gray-800/80 to-gray-900/80 p-1 rounded-2xl shadow-[0_0_15px_rgba(0,100,255,0.5)] backdrop-blur-xl w-[800px] h-[400px] overflow-hidden border border-blue-500/30">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent animate-shine" />
-        <div className="h-full w-full p-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/90 pointer-events-none z-10" />
-          <p className="text-gray-200 leading-relaxed text-3xl animate-scroll relative"
-            style={{
-              whiteSpace: "pre-line",
-              animation: "scroll 30s linear infinite",
-              transform: "translateY(0%)",
-            }}
-          >
-            {`    Branch out of your comfort zone and transform everyday moments into exciting adventures.
-
-            Boldly is a multiplayer game where you're tasked with completing challenges like "Talk to a stranger," "Go to a dance class," or even "Attend every WebLab session."
-
-            Each challenge earns you points based on its difficulty, so the bolder the move, the bigger the reward!
-
-            Invite your friends, compete on the scoreboard, and see who's the ultimate daredevil.
-
-            Don't forget to share your stories—through words or photos—on the Feed, where your friends can cheer you on.
-
-            Rise to the top and prove you're ready for anything life throws your way.
-
-            Adventure is waiting—are you ready to play Boldly?
-            `}
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#0A0B0F] relative overflow-hidden">
+      <NavBar />
+      {/* Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl" />
       </div>
 
-      <style jsx>{`
-        @keyframes scroll {
-          0% {
-            transform: translateY(25%);
-          }
-          100% {
-            transform: translateY(-100%);
-          }
-        }
-        .animate-scroll {
-          animation: scroll 30s linear infinite;
-        }
-        @keyframes shine {
-          from {
-            transform: translateX(-100%);
-          }
-          to {
-            transform: translateX(100%);
-          }
-        }
-        .animate-shine {
-          animation: shine 3s linear infinite;
-        }
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-          background-size: 200% 200%;
-        }
-        @keyframes logoFloat {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        .animate-float {
-          animation: logoFloat 3s ease-in-out infinite;
-        }
-        .particle {
-          position: absolute;
-          width: 2px;
-          height: 2px;
-          background: rgba(255, 255, 255, 0.5);
-          pointer-events: none;
-          animation: float linear infinite;
-        }
-        @keyframes float {
-          0% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-          }
-        }
-        .particle-container {
-          z-index: 0;
-        }
-      `}</style>
+      <div className="relative z-10">
+        {/* Hero Section */}
+        <section className="pt-32 pb-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-5xl font-bold text-white mb-6">
+              Welcome to{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                boldly
+              </span>
+            </h1>
+            <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+              Your journey to becoming more confident starts here. Challenge yourself,
+              connect with others, and transform everyday moments into exciting adventures.
+            </p>
+            <Link
+              to="/challenges"
+              className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Start Your Journey
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Link>
+          </div>
+        </section>
 
-      <div className="z-10">
-        <img src={logo} alt="Boldly Logo" className="w-40 h-15 absolute top-10 left-10 animate-float" />
-        <Link
-          to="/"
-          className="absolute top-40 left-10 backdrop-blur-xl hover:bg-blue-500/40 p-6 rounded-full"
-        >
-          <House className="w-20 h-20" />
-        </Link>
+        {/* Features Grid */}
+        <section className="py-20 px-4">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl font-bold text-white text-center mb-12">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {features.map((feature, index) => (
+                <FeatureCard key={index} {...feature} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="relative group inline-block">
+              <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
+              <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-12">
+                <h2 className="text-3xl font-bold text-white mb-6">
+                  Ready to Challenge Yourself?
+                </h2>
+                <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+                  Join thousands of others who are pushing their boundaries and creating
+                  unforgettable memories.
+                </p>
+                <Link
+                  to="/challenges"
+                  className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Browse Challenges
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
