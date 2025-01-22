@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { get } from "../../utilities";
-import { Trophy, Star, Users, Activity, Calendar } from "lucide-react";
+import { Trophy, Star, Users, Activity, Calendar, MessageCircle } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import { UserContext } from "../App.jsx";
 
@@ -21,20 +21,35 @@ const StatCard = ({ icon: Icon, title, value }) => (
   </div>
 );
 
-const ActivityCard = ({ activity }) => (
-  <div className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
-    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-      <Trophy className="w-5 h-5 text-purple-400" />
-    </div>
-    <div>
-      <p className="text-white">{activity.description}</p>
-      <div className="flex items-center space-x-2 text-sm text-gray-400">
-        <Calendar className="w-4 h-4" />
-        <span>{new Date(activity.timestamp).toLocaleDateString()}</span>
+const ActivityCard = ({ activity }) => {
+  const getIcon = (type) => {
+    switch (type) {
+      case 'challenge':
+        return Trophy;
+      case 'post':
+        return MessageCircle;
+      default:
+        return Activity;
+    }
+  };
+
+  const Icon = getIcon(activity.type);
+
+  return (
+    <div className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+      <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+        <Icon className="w-5 h-5 text-purple-400" />
+      </div>
+      <div>
+        <p className="text-white">{activity.description}</p>
+        <div className="flex items-center space-x-2 text-sm text-gray-400">
+          <Calendar className="w-4 h-4" />
+          <span>{new Date(activity.timestamp).toLocaleDateString()}</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Profile = () => {
   const { user } = useContext(UserContext);
@@ -43,11 +58,15 @@ const Profile = () => {
     completedChallenges: 0,
     currentStreak: 0,
     friends: [],
+    friendRequests: [],
     recentActivity: [],
   });
 
   useEffect(() => {
     loadProfile();
+    // Refresh data every minute
+    const interval = setInterval(loadProfile, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadProfile = async () => {
@@ -101,18 +120,15 @@ const Profile = () => {
         </div>
 
         {/* Recent Activity */}
-        <div className="relative group">
-          <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
-          <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
-            <div className="space-y-4">
-              {profile.recentActivity.map((activity, index) => (
-                <ActivityCard key={index} activity={activity} />
-              ))}
-              {profile.recentActivity.length === 0 && (
-                <p className="text-gray-400 text-center py-4">No recent activity</p>
-              )}
-            </div>
+        <div className="bg-[#12141A] rounded-xl border border-white/10 p-6">
+          <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
+          <div className="space-y-4">
+            {profile.recentActivity.map((activity, index) => (
+              <ActivityCard key={index} activity={activity} />
+            ))}
+            {profile.recentActivity.length === 0 && (
+              <p className="text-gray-400 text-center py-4">No recent activity</p>
+            )}
           </div>
         </div>
       </div>

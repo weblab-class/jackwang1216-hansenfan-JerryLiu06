@@ -483,6 +483,102 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+// Get user profile data
+router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    // Get user data
+    const user = await User.findById(req.user._id)
+      .populate("friends")
+      .populate("friendRequests");
+
+    // Get completed challenges
+    const completedChallenges = await Challenge.find({
+      creator: req.user._id,
+      completed: true
+    });
+
+    // Calculate current streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const recentCompletions = await Challenge.find({
+      creator: req.user._id,
+      completed: true,
+      completedAt: { $exists: true }
+    }).sort({ completedAt: -1 });
+
+    let currentStreak = 0;
+    if (recentCompletions.length > 0) {
+      const lastCompletion = new Date(recentCompletions[0].completedAt);
+      lastCompletion.setHours(0, 0, 0, 0);
+
+      if (lastCompletion.getTime() === today.getTime() || lastCompletion.getTime() === yesterday.getTime()) {
+        currentStreak = 1;
+        let checkDate = yesterday;
+        
+        for (let i = 1; i < recentCompletions.length; i++) {
+          const completionDate = new Date(recentCompletions[i].completedAt);
+          completionDate.setHours(0, 0, 0, 0);
+          
+          if (completionDate.getTime() === checkDate.getTime()) {
+            currentStreak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Get recent activity (completed challenges and posts)
+    const [recentChallenges, recentPosts] = await Promise.all([
+      Challenge.find({
+        creator: req.user._id,
+        completed: true
+      })
+        .sort({ completedAt: -1 })
+        .limit(5),
+      Post.find({
+        creator_id: req.user._id
+      })
+        .sort({ timestamp: -1 })
+        .limit(5)
+    ]);
+
+    // Combine and sort recent activity
+    const recentActivity = [
+      ...recentChallenges.map(challenge => ({
+        type: 'challenge',
+        description: `Completed challenge: ${challenge.title}`,
+        timestamp: challenge.completedAt
+      })),
+      ...recentPosts.map(post => ({
+        type: 'post',
+        description: `Posted about challenge: ${post.challengeTitle}`,
+        timestamp: post.timestamp
+      }))
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+    .slice(0, 5);
+
+    // Calculate total points (XP)
+    const points = user.xp || 0;
+
+    res.json({
+      points,
+      completedChallenges: completedChallenges.length,
+      currentStreak,
+      friends: user.friends || [],
+      friendRequests: user.friendRequests || [],
+      recentActivity
+    });
+  } catch (err) {
+    console.error("Error getting profile data:", err);
+    res.status(500).send({ error: "Failed to get profile data" });
+  }
+});
+
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);

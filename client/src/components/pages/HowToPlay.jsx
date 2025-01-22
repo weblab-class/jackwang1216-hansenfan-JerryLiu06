@@ -56,7 +56,7 @@ const HowToPlay = () => {
             <h1 className="text-5xl font-bold text-white mb-6">
               Welcome to{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                boldly
+                Boldly.
               </span>
             </h1>
             <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
