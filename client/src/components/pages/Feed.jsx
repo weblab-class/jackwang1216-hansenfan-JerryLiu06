@@ -76,7 +76,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
 
           {/* Post Actions */}
           <div className="px-4 py-3 border-t border-white/10 flex items-center space-x-6">
-            <button 
+            <button
               onClick={handleLike}
               disabled={isLiking}
               className={`flex items-center space-x-2 transition-colors ${
@@ -86,15 +86,12 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
               <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span>{post.likes ? post.likes.length : 0}</span>
             </button>
-            <button 
+            <button
               onClick={() => setShowComments(!showComments)}
               className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
               <span>{post.comments ? post.comments.length : 0}</span>
-            </button>
-            <button className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
-              <Share2 className="w-4 h-4" />
             </button>
           </div>
 
@@ -213,9 +210,9 @@ const NewPostForm = ({ onSubmit }) => {
     try {
       const imageUrl = await convertToBase64(image);
       const challenge = completedChallenges.find(c => c._id === selectedChallenge);
-      await onSubmit({ 
-        content, 
-        imageUrl, 
+      await onSubmit({
+        content,
+        imageUrl,
         challenge: selectedChallenge,
         challengeTitle: challenge.title
       });
