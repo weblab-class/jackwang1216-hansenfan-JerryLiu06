@@ -1,8 +1,13 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import NavBar from "../modules/NavBar";
 import { Trophy, Star, Clock, Users as UsersIcon, ArrowRight } from "lucide-react";
+import { get, post } from "../../utilities";
 
 const Challenges = () => {
+  const [challenges, setChallenges] = useState([]);
+  const [activeTab, setActiveTab] = useState("all"); // all, my, completed
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const createParticle = () => {
       const particle = document.createElement("div");
@@ -16,6 +21,47 @@ const Challenges = () => {
     const particleInterval = setInterval(createParticle, 200);
     return () => clearInterval(particleInterval);
   }, []);
+
+  useEffect(() => {
+    loadChallenges();
+  }, [activeTab]);
+
+  const loadChallenges = async () => {
+    try {
+      setLoading(true);
+      const endpoint = activeTab === "my" ? "/api/challenges/my" : "/api/challenges";
+      const challengesData = await get(endpoint);
+      setChallenges(challengesData);
+    } catch (err) {
+      console.error("Failed to load challenges:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateChallenge = async (difficulty) => {
+    try {
+      console.log("Generating challenge with difficulty:", difficulty);
+      setLoading(true);
+      const newChallenge = await post("/api/challenges/generate", { difficulty });
+      console.log("Received new challenge:", newChallenge);
+      setChallenges((prev) => [newChallenge, ...prev]);
+    } catch (err) {
+      console.error("Failed to generate challenge:", err);
+      alert("Failed to generate challenge. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const joinChallenge = async (challengeId) => {
+    try {
+      await post(`/api/challenges/${challengeId}/join`);
+      loadChallenges();
+    } catch (err) {
+      console.error("Failed to join challenge:", err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-blue-900/20 to-gray-900 relative overflow-hidden">
@@ -31,79 +77,91 @@ const Challenges = () => {
               Active Challenges
             </h1>
             <div className="flex space-x-4">
-              <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/20">
+              <button 
+                onClick={() => setActiveTab("all")}
+                className={`px-6 py-3 ${
+                  activeTab === "all" 
+                    ? "bg-gradient-to-r from-blue-600 to-blue-800" 
+                    : "bg-gray-800/50 backdrop-blur-sm"
+                } text-white rounded-xl hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg`}
+              >
                 All Challenges
               </button>
-              <button className="px-6 py-3 bg-gray-800/50 backdrop-blur-sm text-gray-300 rounded-xl hover:bg-gray-700/50 transition-all border border-white/5">
+              <button 
+                onClick={() => setActiveTab("my")}
+                className={`px-6 py-3 ${
+                  activeTab === "my" 
+                    ? "bg-gradient-to-r from-blue-600 to-blue-800" 
+                    : "bg-gray-800/50 backdrop-blur-sm"
+                } text-gray-300 rounded-xl hover:bg-gray-700/50 transition-all border border-white/5`}
+              >
                 My Challenges
               </button>
-              <button className="px-6 py-3 bg-gray-800/50 backdrop-blur-sm text-gray-300 rounded-xl hover:bg-gray-700/50 transition-all border border-white/5">
-                Completed
+              <button
+                onClick={() => generateChallenge("Intermediate")}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white rounded-xl hover:from-green-500 hover:to-green-700 transition-all shadow-lg"
+                disabled={loading}
+              >
+                Generate New Challenge
               </button>
             </div>
           </div>
 
           {/* Challenge Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="group relative"
-              >
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-300"></div>
-                <div className="relative bg-gray-900/50 backdrop-blur-xl rounded-2xl p-6 hover:bg-gray-800/50 transition-all">
-                  {/* Challenge Header */}
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-white mb-2">Challenge Title {i + 1}</h2>
-                      <p className="text-gray-400">
-                        This is a brief description of the challenge and what participants need to accomplish...
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-yellow-500/10 px-3 py-1 rounded-full">
-                      <Trophy className="w-6 h-6 text-yellow-500" />
-                      <span className="text-yellow-500 font-medium">500 XP</span>
-                    </div>
-                  </div>
-
-                  {/* Challenge Progress */}
-                  <div className="mb-6">
-                    <div className="flex justify-between text-sm text-gray-400 mb-2">
-                      <span>Progress</span>
-                      <span>64%</span>
-                    </div>
-                    <div className="h-2 bg-gray-800/50 rounded-full overflow-hidden backdrop-blur-sm">
-                      <div className="h-full w-2/3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse" />
-                    </div>
-                  </div>
-
-                  {/* Challenge Stats */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-6 text-sm text-gray-400">
-                      <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                        <Clock className="w-4 h-4 mr-2" />
-                        <span>2 days left</span>
+          {loading ? (
+            <div className="text-center text-gray-400">Loading challenges...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {challenges.map((challenge) => (
+                <div
+                  key={challenge._id}
+                  className="group relative"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-300"></div>
+                  <div className="relative bg-gray-900/50 backdrop-blur-xl rounded-2xl p-6 hover:bg-gray-800/50 transition-all">
+                    {/* Challenge Header */}
+                    <div className="flex justify-between items-start mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-white mb-2">{challenge.title}</h2>
+                        <p className="text-gray-400">{challenge.description}</p>
                       </div>
-                      <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                        <UsersIcon className="w-4 h-4 mr-2" />
-                        <span>24 participants</span>
-                      </div>
-                      <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
-                        <Star className="w-4 h-4 mr-2 text-yellow-500" />
-                        <span>Intermediate</span>
+                      <div className="flex items-center space-x-2 bg-yellow-500/10 px-3 py-1 rounded-full">
+                        <Trophy className="w-6 h-6 text-yellow-500" />
+                        <span className="text-yellow-500 font-medium">{challenge.xpReward} XP</span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Action Button */}
-                  <button className="w-full bg-gradient-to-r from-blue-600/80 to-purple-600/80 hover:from-blue-500 hover:to-purple-500 text-white py-3 rounded-xl transition-all flex items-center justify-center space-x-2 backdrop-blur-sm shadow-lg shadow-blue-500/20">
-                    <span>Continue Challenge</span>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                    {/* Challenge Stats */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-6 text-sm text-gray-400">
+                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
+                          <Clock className="w-4 h-4 mr-2" />
+                          <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
+                          <UsersIcon className="w-4 h-4 mr-2" />
+                          <span>{challenge.participants?.length || 0} participants</span>
+                        </div>
+                        <div className="flex items-center bg-white/5 px-3 py-1 rounded-full">
+                          <Star className="w-4 h-4 mr-2 text-yellow-500" />
+                          <span>{challenge.difficulty}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Join Button */}
+                    <button
+                      onClick={() => joinChallenge(challenge._id)}
+                      className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-xl hover:from-blue-500 hover:to-blue-700 transition-all shadow-lg flex items-center justify-center space-x-2"
+                    >
+                      <span>Join Challenge</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
       <style jsx>{`

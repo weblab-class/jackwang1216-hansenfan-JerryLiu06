@@ -13,6 +13,8 @@ const express = require("express");
 const User = require("./models/user");
 const Post = require("./models/post");
 const Message = require("./models/message");
+const Challenge = require("./models/challenge");
+const { generateChallenge } = require("./services/openai").default;
 
 // import authentication library
 const auth = require("./auth");
@@ -48,17 +50,19 @@ router.post("/initsocket", (req, res) => {
 // Get all posts
 router.get("/posts", (req, res) => {
   console.log("GET /api/posts called");
-  Post.find({}).sort({ timestamp: -1 }).then((posts) => {
-    console.log("Found posts:", posts);
-    res.send(posts);
-  });
+  Post.find({})
+    .sort({ timestamp: -1 })
+    .then((posts) => {
+      console.log("Found posts:", posts);
+      res.send(posts);
+    });
 });
 
 // Create a new post
 router.post("/post", auth.ensureLoggedIn, (req, res) => {
   console.log("POST /api/post called with body:", req.body);
   console.log("User:", req.user);
-  
+
   if (!req.body.content) {
     console.log("Missing content in request");
     return res.status(400).json({ error: "Content is required" });
@@ -71,7 +75,8 @@ router.post("/post", auth.ensureLoggedIn, (req, res) => {
     imageUrl: req.body.imageUrl || "",
   });
 
-  newPost.save()
+  newPost
+    .save()
     .then((post) => {
       console.log("Saved new post:", post);
       res.json(post);
@@ -253,6 +258,93 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.log("Failed to send message:", err);
     res.status(500).send({ error: "Failed to send message" });
+  }
+});
+
+// Challenge-related endpoints
+router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({}).populate("creator", "name").sort({ createdAt: -1 });
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting challenges:", err);
+    res.status(500).send({ error: "Could not get challenges" });
+  }
+});
+
+router.post("/challenges/generate", async (req, res) => {
+  try {
+    console.log("Challenge generation request received");
+    const { difficulty = "Intermediate" } = req.body;
+    console.log("Requesting challenge with difficulty:", difficulty);
+
+    console.log("Calling OpenAI service...");
+    const challengeData = await generateChallenge(difficulty);
+    console.log("Received challenge data:", challengeData);
+
+    console.log("Creating new Challenge document...");
+    const challenge = new Challenge({
+      ...challengeData,
+      creator: req.user ? req.user._id : "anonymous",
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      participants: [],
+    });
+
+    console.log("Saving challenge to database...");
+    await challenge.save();
+    console.log("Challenge saved successfully");
+    res.send(challenge);
+  } catch (err) {
+    console.error("Full error object:", err);
+    console.error("Error in challenge generation endpoint:", {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      response: err.response
+        ? {
+            status: err.response.status,
+            data: err.response.data,
+          }
+        : null,
+    });
+    res.status(500).send({
+      error: "Could not generate challenge",
+      details: err.message,
+      name: err.name,
+    });
+  }
+});
+
+router.post("/challenges/:challengeId/join", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    if (!challenge.participants.includes(req.user._id)) {
+      challenge.participants.push(req.user._id);
+      await challenge.save();
+    }
+
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error joining challenge:", err);
+    res.status(500).send({ error: "Could not join challenge" });
+  }
+});
+
+router.get("/challenges/my", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      participants: req.user._id,
+    })
+      .populate("creator", "name")
+      .sort({ createdAt: -1 });
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting user challenges:", err);
+    res.status(500).send({ error: "Could not get user challenges" });
   }
 });
 

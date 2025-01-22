@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 /*
 |--------------------------------------------------------------------------
 | server.js -- The core of your server
@@ -17,9 +19,6 @@
 // this is a tool provided by staff, so you don't need to worry about it
 const validator = require("./validator");
 validator.checkSetup();
-
-//allow us to use process.ENV
-require("dotenv").config();
 
 //import libraries needed for the webserver to work!
 const http = require("http");
