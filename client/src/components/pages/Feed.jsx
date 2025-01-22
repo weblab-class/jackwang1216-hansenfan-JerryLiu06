@@ -146,13 +146,14 @@ const ImageModal = ({ imageUrl, onClose }) => {
   if (!imageUrl) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={onClose}>
-      <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <div className="relative w-full h-full flex items-center justify-center">
         <img
           src={imageUrl}
           alt="Enlarged view"
-          className="w-full h-full object-contain rounded-lg"
+          className="max-w-full max-h-full object-contain"
           onClick={(e) => e.stopPropagation()}
+          style={{ maxHeight: 'calc(100vh - 2rem)' }}
         />
         <button
           onClick={onClose}
