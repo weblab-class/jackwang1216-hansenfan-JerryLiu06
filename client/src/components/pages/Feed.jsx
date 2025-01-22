@@ -3,32 +3,41 @@ import { get, post as apiPost } from "../../utilities";
 import { Image as ImageIcon, Heart, MessageCircle, Share2, Calendar, Trophy, X } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
-const PostCard = ({ post, onLike, userId }) => {
+const PostCard = ({ post, onLike, onComment, userId }) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
+  const [isCommenting, setIsCommenting] = useState(false);
   const formattedDate = new Date(post.timestamp).toLocaleDateString();
   const isLiked = post.likes && post.likes.includes(userId);
 
   const handleLike = async () => {
+    if (isLiking) return;
+    setIsLiking(true);
     try {
-      await apiPost(`/api/posts/${post._id}/like`);
-      if (onLike) onLike();
+      const response = await apiPost(`/api/posts/${post._id}/like`);
+      if (onLike) onLike(post._id, response.likes);
     } catch (err) {
       console.error("Error liking post:", err);
+    } finally {
+      setIsLiking(false);
     }
   };
 
   const handleComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isCommenting) return;
 
+    setIsCommenting(true);
     try {
-      await apiPost(`/api/posts/${post._id}/comment`, { content: newComment });
-      if (onLike) onLike(); // Refresh posts to show new comment
+      const response = await apiPost(`/api/posts/${post._id}/comment`, { content: newComment });
+      if (onComment) onComment(post._id, response.comments);
       setNewComment("");
     } catch (err) {
       console.error("Error commenting on post:", err);
+    } finally {
+      setIsCommenting(false);
     }
   };
 
@@ -69,9 +78,10 @@ const PostCard = ({ post, onLike, userId }) => {
           <div className="px-4 py-3 border-t border-white/10 flex items-center space-x-6">
             <button 
               onClick={handleLike}
+              disabled={isLiking}
               className={`flex items-center space-x-2 transition-colors ${
                 isLiked ? "text-pink-400" : "text-gray-400 hover:text-pink-400"
-              }`}
+              } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span>{post.likes ? post.likes.length : 0}</span>
@@ -102,7 +112,7 @@ const PostCard = ({ post, onLike, userId }) => {
                 />
                 <button
                   type="submit"
-                  disabled={!newComment.trim()}
+                  disabled={!newComment.trim() || isCommenting}
                   className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Post
@@ -325,6 +335,26 @@ const Feed = () => {
     }
   };
 
+  const handleLike = (postId, newLikes) => {
+    setPosts(currentPosts =>
+      currentPosts.map(post =>
+        post._id === postId
+          ? { ...post, likes: newLikes }
+          : post
+      )
+    );
+  };
+
+  const handleComment = (postId, newComments) => {
+    setPosts(currentPosts =>
+      currentPosts.map(post =>
+        post._id === postId
+          ? { ...post, comments: newComments }
+          : post
+      )
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0B0F] pt-16">
       <NavBar />
@@ -335,7 +365,8 @@ const Feed = () => {
             <PostCard
               key={post._id}
               post={post}
-              onLike={loadPosts}
+              onLike={handleLike}
+              onComment={handleComment}
               userId={userId}
             />
           ))}
