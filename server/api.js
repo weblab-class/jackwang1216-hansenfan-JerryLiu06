@@ -365,7 +365,7 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
 // Challenge-related endpoints
 router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenges = await Challenge.find({}).populate("creator", "name").sort({ createdAt: -1 });
+    const challenges = await Challenge.find({ creator: req.user._id }).populate("creator", "name").sort({ createdAt: -1 });
     res.send(challenges);
   } catch (err) {
     console.error("Error getting challenges:", err);
@@ -373,7 +373,7 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
-router.post("/challenges/generate", async (req, res) => {
+router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
     console.log("Challenge generation request received");
     const { difficulty = "Intermediate" } = req.body;
@@ -386,9 +386,8 @@ router.post("/challenges/generate", async (req, res) => {
     console.log("Creating new Challenge document...");
     const challenge = new Challenge({
       ...challengeData,
-      creator: req.user ? req.user._id : "anonymous",
+      creator: req.user._id,
       deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      participants: [],
     });
 
     console.log("Saving challenge to database...");
@@ -416,29 +415,39 @@ router.post("/challenges/generate", async (req, res) => {
   }
 });
 
-router.post("/challenges/:challengeId/join", auth.ensureLoggedIn, async (req, res) => {
+router.post("/challenges/:challengeId/complete", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenge = await Challenge.findById(req.params.challengeId);
+    const challenge = await Challenge.findOne({
+      _id: req.params.challengeId,
+      creator: req.user._id
+    });
+
     if (!challenge) {
       return res.status(404).send({ error: "Challenge not found" });
     }
 
-    if (!challenge.participants.includes(req.user._id)) {
-      challenge.participants.push(req.user._id);
-      await challenge.save();
+    challenge.completed = true;
+    challenge.completedAt = new Date();
+    await challenge.save();
+
+    // TODO: Add XP to user's total here
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.xp = (user.xp || 0) + challenge.xpReward;
+      await user.save();
     }
 
     res.send(challenge);
   } catch (err) {
-    console.error("Error joining challenge:", err);
-    res.status(500).send({ error: "Could not join challenge" });
+    console.error("Error completing challenge:", err);
+    res.status(500).send({ error: "Could not complete challenge" });
   }
 });
 
 router.get("/challenges/my", auth.ensureLoggedIn, async (req, res) => {
   try {
     const challenges = await Challenge.find({
-      participants: req.user._id,
+      creator: req.user._id,
     })
       .populate("creator", "name")
       .sort({ createdAt: -1 });

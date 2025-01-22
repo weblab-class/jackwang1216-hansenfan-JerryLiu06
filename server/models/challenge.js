@@ -10,13 +10,17 @@ const ChallengeSchema = new mongoose.Schema({
   },
   xpReward: Number,
   deadline: Date,
-  participants: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "user"
-  }],
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user"
+  },
+  completed: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: {
+    type: Date,
+    default: null
   },
   createdAt: {
     type: Date,

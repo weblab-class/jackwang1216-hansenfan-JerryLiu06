@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { get, post } from "../../utilities";
-import { Trophy, Star, Clock, Users, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
-const ChallengeCard = ({ challenge, onJoin, userId }) => {
-  const isJoined = challenge.participants.includes(userId);
-
+const ChallengeCard = ({ challenge, onComplete }) => {
   return (
     <div className="relative group">
       <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
-      <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-6">
+      <div className={`relative bg-[#12141A] rounded-xl border border-white/10 p-6 ${challenge.completed ? 'opacity-75' : ''}`}>
         <div className="flex items-start justify-between mb-4">
           <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center">
             <Trophy className="w-6 h-6 text-purple-400" />
           </div>
           <div className="flex items-center space-x-2">
             <Star className="w-5 h-5 text-yellow-400" />
-            <span className="text-white font-medium">{challenge.points} pts</span>
+            <span className="text-white font-medium">{challenge.xpReward} XP</span>
           </div>
         </div>
         
@@ -27,27 +25,29 @@ const ChallengeCard = ({ challenge, onJoin, userId }) => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1">
               <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-400">{challenge.duration}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-400">{challenge.participants.length} joined</span>
+              <span className="text-sm text-gray-400">7 days</span>
             </div>
           </div>
           
           <button
-            onClick={() => onJoin(challenge._id)}
+            onClick={() => onComplete(challenge._id)}
+            disabled={challenge.completed}
             className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
-              isJoined
-                ? "bg-purple-500/20 text-purple-400"
-                : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+              challenge.completed
+                ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90'
             }`}
-            disabled={isJoined}
           >
-            <span>{isJoined ? "Joined" : "Join Challenge"}</span>
-            {!isJoined && <ArrowRight className="w-4 h-4" />}
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{challenge.completed ? 'Completed' : 'Complete'}</span>
           </button>
         </div>
+        
+        {challenge.completed && challenge.completedAt && (
+          <div className="mt-4 text-sm text-gray-400">
+            Completed on {new Date(challenge.completedAt).toLocaleDateString()}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -55,33 +55,21 @@ const ChallengeCard = ({ challenge, onJoin, userId }) => {
 
 const Challenges = ({ userId }) => {
   const [challenges, setChallenges] = useState([]);
-  const [filter, setFilter] = useState("all");
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadChallenges();
-  }, [filter]);
+  }, []);
 
   const loadChallenges = async () => {
     try {
-      const data = await get("/api/challenges", { filter });
+      const data = await get("/api/challenges");
       setChallenges(data);
       setError(null);
     } catch (err) {
       console.error("Failed to load challenges:", err);
       setError("Failed to load challenges. Please try again.");
-    }
-  };
-
-  const handleJoinChallenge = async (challengeId) => {
-    try {
-      await post("/api/challenges/join", { challengeId });
-      loadChallenges();
-      setError(null);
-    } catch (err) {
-      console.error("Failed to join challenge:", err);
-      setError("Failed to join challenge. Please try again.");
     }
   };
 
@@ -103,64 +91,59 @@ const Challenges = ({ userId }) => {
     }
   };
 
+  const handleCompleteChallenge = async (challengeId) => {
+    try {
+      const updatedChallenge = await post(`/api/challenges/${challengeId}/complete`);
+      setChallenges((prev) =>
+        prev.map((challenge) =>
+          challenge._id === challengeId ? updatedChallenge : challenge
+        )
+      );
+      setError(null);
+    } catch (err) {
+      console.error("Failed to complete challenge:", err);
+      setError("Failed to complete challenge. Please try again.");
+    }
+  };
+
   return (
-    <div className="min-h-screen pt-16 bg-[#0A0B0F]">
+    <div className="min-h-screen bg-[#0A0B0F] pt-16">
       <NavBar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Daily Challenges
-          </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-            Push your boundaries and earn rewards by completing these exciting challenges.
-          </p>
-          {error && (
-            <div className="flex items-center justify-center text-red-400 mb-6">
-              <AlertCircle className="w-5 h-5 mr-2" />
-              <span>{error}</span>
-            </div>
-          )}
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-white">My Challenges</h1>
           <button
             onClick={handleGenerateChallenge}
             disabled={isGenerating}
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white font-medium flex items-center space-x-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles className="w-5 h-5 mr-2" />
-            {isGenerating ? "Generating..." : "Generate New Challenge"}
+            <Sparkles className="w-5 h-5" />
+            <span>{isGenerating ? "Generating..." : "Generate Challenge"}</span>
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex justify-center mb-12">
-          <div className="inline-flex bg-[#12141A] rounded-lg p-1">
-            {["all", "active", "completed"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  filter === f
-                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center space-x-3 text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            <p>{error}</p>
           </div>
-        </div>
+        )}
 
-        {/* Challenge Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {challenges.map((challenge) => (
             <ChallengeCard
               key={challenge._id}
               challenge={challenge}
-              onJoin={handleJoinChallenge}
-              userId={userId}
+              onComplete={handleCompleteChallenge}
             />
           ))}
         </div>
+
+        {challenges.length === 0 && !error && (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No challenges yet. Generate one to get started!</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -237,7 +237,7 @@ const Feed = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0B0F]">
+    <div className="min-h-screen bg-[#0A0B0F] pt-16">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 py-8">
         <NewPostForm onSubmit={handleNewPost} />
