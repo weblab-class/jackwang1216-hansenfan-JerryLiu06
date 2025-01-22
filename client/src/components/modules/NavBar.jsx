@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { User, Users, Send, LogOut, CircleHelp } from "lucide-react";
+import { User, Users, Trophy, LogOut, CircleHelp, MessageCircle } from "lucide-react";
 import { UserContext } from "../App";
 import logo from "../../public/icons/logo3.png";
 
@@ -32,9 +32,14 @@ const NavBar = () => {
           <Users className="w-6 h-6" />
         </NavLink>
 
-        <NavLink to="/challenges" isActive={isActive("/challenges")}>
-          <Send className="w-6 h-6" />
+        <NavLink to="/chat" isActive={isActive("/chat")}>
+          <MessageCircle className="w-6 h-6" />
         </NavLink>
+
+        <NavLink to="/challenges" isActive={isActive("/challenges")}>
+          <Trophy className="w-6 h-6" />
+        </NavLink>
+
         <NavLink to="/howtoplay" isActive={isActive("/howtoplay")}>
           <CircleHelp className="w-6 h-6" />
         </NavLink>
@@ -52,17 +57,19 @@ const NavBar = () => {
 };
 
 // Helper component for nav links
-const NavLink = ({ to, isActive, children }) => (
-  <Link
-    to={to}
-    className={`p-3 rounded-xl transition-all transform hover:scale-105 ${
-      isActive
-        ? "text-white bg-gradient-to-r from-blue-500/20 to-purple-500/20 shadow-lg shadow-blue-500/20"
-        : "text-white/60 hover:text-white hover:bg-white/10"
-    }`}
-  >
-    {children}
-  </Link>
-);
+const NavLink = ({ to, isActive, children }) => {
+  return (
+    <Link
+      to={to}
+      className={`p-3 rounded-xl transition-all hover:scale-105 ${
+        isActive
+          ? "text-white bg-white/10"
+          : "text-white/60 hover:text-white hover:bg-white/10"
+      }`}
+    >
+      {children}
+    </Link>
+  );
+};
 
 export default NavBar;

@@ -11,6 +11,7 @@ import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 import Challenges from "./pages/Challenges";
 import HowToPlay from "./pages/HowToPlay";
+import Chat from "./pages/Chat";
 
 export const UserContext = createContext(null);
 
@@ -95,6 +96,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Feed />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/howtoplay" element={<HowToPlay />} />
             <Route path="*" element={<Navigate to="/" />} />

@@ -12,6 +12,7 @@ const express = require("express");
 // import models so we can interact with the database
 const User = require("./models/user");
 const Post = require("./models/post");
+const Message = require("./models/message");
 
 // import authentication library
 const auth = require("./auth");
@@ -79,6 +80,180 @@ router.post("/post", auth.ensureLoggedIn, (req, res) => {
       console.error("Error saving post:", err);
       res.status(500).json({ error: "Could not save post", details: err.message });
     });
+});
+
+// Friend-related endpoints
+router.get("/friends", auth.ensureLoggedIn, (req, res) => {
+  User.findById(req.user._id)
+    .populate("friends")
+    .then((user) => {
+      res.send(user.friends);
+    })
+    .catch((err) => {
+      console.log("Failed to get friends:", err);
+      res.status(500).send({ error: "Failed to get friends" });
+    });
+});
+
+router.get("/friend-requests", auth.ensureLoggedIn, (req, res) => {
+  User.findById(req.user._id)
+    .populate("friendRequests")
+    .then((user) => {
+      res.send(user.friendRequests);
+    })
+    .catch((err) => {
+      console.log("Failed to get friend requests:", err);
+      res.status(500).send({ error: "Failed to get friend requests" });
+    });
+});
+
+router.get("/users/search/:query", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const users = await User.find({
+      _id: { $ne: req.user._id },
+      name: new RegExp(req.params.query, "i"),
+    });
+
+    const currentUser = await User.findById(req.user._id);
+    const results = users.map((user) => ({
+      _id: user._id,
+      name: user.name,
+      isFriend: currentUser.friends.includes(user._id),
+      requestSent: currentUser.sentFriendRequests.includes(user._id),
+    }));
+
+    res.send(results);
+  } catch (err) {
+    console.log("Failed to search users:", err);
+    res.status(500).send({ error: "Failed to search users" });
+  }
+});
+
+router.post("/friend-request/:userId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const recipient = await User.findById(req.params.userId);
+    const sender = await User.findById(req.user._id);
+
+    if (!recipient || !sender) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    if (!recipient.friendRequests.includes(sender._id)) {
+      recipient.friendRequests.push(sender._id);
+      await recipient.save();
+    }
+
+    if (!sender.sentFriendRequests.includes(recipient._id)) {
+      sender.sentFriendRequests.push(recipient._id);
+      await sender.save();
+    }
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log("Failed to send friend request:", err);
+    res.status(500).send({ error: "Failed to send friend request" });
+  }
+});
+
+router.post("/friend-request/:userId/accept", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const [user, friend] = await Promise.all([
+      User.findById(req.user._id),
+      User.findById(req.params.userId),
+    ]);
+
+    if (!user || !friend) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Add each user to the other's friends list
+    if (!user.friends.includes(friend._id)) {
+      user.friends.push(friend._id);
+      user.friendRequests = user.friendRequests.filter((id) => !id.equals(friend._id));
+      await user.save();
+    }
+
+    if (!friend.friends.includes(user._id)) {
+      friend.friends.push(user._id);
+      friend.sentFriendRequests = friend.sentFriendRequests.filter((id) => !id.equals(user._id));
+      await friend.save();
+    }
+
+    res.send(friend);
+  } catch (err) {
+    console.log("Failed to accept friend request:", err);
+    res.status(500).send({ error: "Failed to accept friend request" });
+  }
+});
+
+router.post("/friend-request/:userId/reject", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const [user, friend] = await Promise.all([
+      User.findById(req.user._id),
+      User.findById(req.params.userId),
+    ]);
+
+    if (!user || !friend) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    user.friendRequests = user.friendRequests.filter((id) => !id.equals(friend._id));
+    await user.save();
+
+    friend.sentFriendRequests = friend.sentFriendRequests.filter((id) => !id.equals(user._id));
+    await friend.save();
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log("Failed to reject friend request:", err);
+    res.status(500).send({ error: "Failed to reject friend request" });
+  }
+});
+
+// Message-related endpoints
+router.get("/messages/:userId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const messages = await Message.find({
+      $or: [
+        { sender: req.user._id, recipient: req.params.userId },
+        { sender: req.params.userId, recipient: req.user._id },
+      ],
+    })
+      .sort({ timestamp: 1 })
+      .populate("sender")
+      .populate("recipient");
+
+    res.send(messages);
+  } catch (err) {
+    console.log("Failed to get messages:", err);
+    res.status(500).send({ error: "Failed to get messages" });
+  }
+});
+
+router.post("/message", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const message = new Message({
+      sender: req.user._id,
+      recipient: req.body.recipient,
+      content: req.body.content,
+    });
+
+    await message.save();
+    const populatedMessage = await Message.findById(message._id)
+      .populate("sender")
+      .populate("recipient");
+
+    // Emit the message through socket.io
+    const recipientSocket = socketManager.getSocketFromUserID(req.body.recipient);
+    if (recipientSocket) {
+      socketManager.getIo().to(recipientSocket.id).emit("message", populatedMessage);
+    }
+
+    res.send(populatedMessage);
+  } catch (err) {
+    console.log("Failed to send message:", err);
+    res.status(500).send({ error: "Failed to send message" });
+  }
 });
 
 // anything else falls to this "not found" case
