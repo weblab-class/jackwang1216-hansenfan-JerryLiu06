@@ -4,7 +4,7 @@ import OpenAI from "openai";
 console.log("OpenAI API Key:", "Present");
 
 const openai = new OpenAI({
-  apiKey: "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",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const generateChallenge = async (difficulty = "Intermediate") => {
