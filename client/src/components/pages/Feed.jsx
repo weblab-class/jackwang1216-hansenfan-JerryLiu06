@@ -1,10 +1,35 @@
 import React, { useState, useEffect } from "react";
-import { get, post } from "../../utilities";
+import { get, post as apiPost } from "../../utilities";
 import { Image as ImageIcon, Heart, MessageCircle, Share2, Calendar, Trophy, X } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
 const PostCard = ({ post, onLike, userId }) => {
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState("");
   const formattedDate = new Date(post.timestamp).toLocaleDateString();
+  const isLiked = post.likes && post.likes.includes(userId);
+
+  const handleLike = async () => {
+    try {
+      await apiPost(`/api/posts/${post._id}/like`);
+      if (onLike) onLike();
+    } catch (err) {
+      console.error("Error liking post:", err);
+    }
+  };
+
+  const handleComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    try {
+      await apiPost(`/api/posts/${post._id}/comment`, { content: newComment });
+      if (onLike) onLike(); // Refresh posts to show new comment
+      setNewComment("");
+    } catch (err) {
+      console.error("Error commenting on post:", err);
+    }
+  };
 
   return (
     <div className="relative group">
@@ -40,18 +65,69 @@ const PostCard = ({ post, onLike, userId }) => {
 
         {/* Post Actions */}
         <div className="px-4 py-3 border-t border-white/10 flex items-center space-x-6">
-          <button className="flex items-center space-x-2 text-gray-400 hover:text-pink-400 transition-colors">
-            <Heart className="w-4 h-4" />
-            <span>0</span>
+          <button 
+            onClick={handleLike}
+            className={`flex items-center space-x-2 transition-colors ${
+              isLiked ? "text-pink-400" : "text-gray-400 hover:text-pink-400"
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+            <span>{post.likes ? post.likes.length : 0}</span>
           </button>
-          <button className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+          >
             <MessageCircle className="w-4 h-4" />
-            <span>0</span>
+            <span>{post.comments ? post.comments.length : 0}</span>
           </button>
           <button className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
             <Share2 className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Comments Section */}
+        {showComments && (
+          <div className="px-4 py-3 border-t border-white/10 space-y-4">
+            {/* Comment Form */}
+            <form onSubmit={handleComment} className="flex space-x-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              <button
+                type="submit"
+                disabled={!newComment.trim()}
+                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Post
+              </button>
+            </form>
+
+            {/* Comments List */}
+            <div className="space-y-3">
+              {post.comments && post.comments.map((comment, index) => (
+                <div key={index} className="flex space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
+                    {comment.creator_name[0]}
+                  </div>
+                  <div className="flex-1 bg-white/5 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-white">{comment.creator_name}</span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(comment.timestamp).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-300">{comment.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -71,6 +147,8 @@ const NewPostForm = ({ onSubmit }) => {
       await onSubmit({ content, imageUrl: null }); // TODO: Implement image upload
       setContent("");
       setImage(null);
+    } catch (err) {
+      console.error("Error creating post:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -132,37 +210,45 @@ const NewPostForm = ({ onSubmit }) => {
 
 const Feed = () => {
   const [posts, setPosts] = useState([]);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
+    get("/api/whoami").then((user) => {
+      if (user._id) {
+        setUserId(user._id);
+      }
+    });
     loadPosts();
   }, []);
 
-  const loadPosts = async () => {
-    try {
-      const postsData = await get("/api/posts");
-      setPosts(postsData);
-    } catch (err) {
-      console.error("Failed to load posts:", err);
-    }
+  const loadPosts = () => {
+    get("/api/posts").then((postsObjs) => {
+      setPosts(postsObjs);
+    });
   };
 
-  const handleNewPost = async (postData) => {
+  const handleNewPost = async (post) => {
     try {
-      const response = await post("/api/post", postData);
-      setPosts((prev) => [response, ...prev]);
+      await apiPost("/api/posts", post);
+      loadPosts();
     } catch (err) {
-      console.error("Failed to create post:", err);
+      console.error("Error creating post:", err);
     }
   };
 
   return (
-    <div className="min-h-screen pt-16 bg-[#0A0B0F]">
+    <div className="min-h-screen bg-[#0A0B0F]">
       <NavBar />
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-8">
         <NewPostForm onSubmit={handleNewPost} />
-        <div className="space-y-6">
+        <div className="space-y-6 mt-8">
           {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+            <PostCard
+              key={post._id}
+              post={post}
+              onLike={loadPosts}
+              userId={userId}
+            />
           ))}
         </div>
       </div>

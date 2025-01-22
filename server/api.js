@@ -47,6 +47,57 @@ router.post("/initsocket", (req, res) => {
 // | write your API methods below!|
 // |------------------------------|
 
+// Like/unlike a post
+router.post("/posts/:postId/like", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).send({ error: "Post not found" });
+    }
+
+    const userId = req.user._id.toString();
+    const likeIndex = post.likes.indexOf(userId);
+
+    if (likeIndex === -1) {
+      // User hasn't liked the post yet, add like
+      post.likes.push(userId);
+    } else {
+      // User has already liked the post, remove like
+      post.likes.splice(likeIndex, 1);
+    }
+
+    await post.save();
+    res.send(post);
+  } catch (err) {
+    console.error("Error in /api/posts/:postId/like:", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Add a comment to a post
+router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).send({ error: "Post not found" });
+    }
+
+    const comment = {
+      creator_id: req.user._id,
+      creator_name: req.user.name,
+      content: req.body.content,
+      timestamp: new Date(),
+    };
+
+    post.comments.push(comment);
+    await post.save();
+    res.send(post);
+  } catch (err) {
+    console.error("Error in /api/posts/:postId/comment:", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
 // Get all posts
 router.get("/posts", (req, res) => {
   console.log("GET /api/posts called");
@@ -85,6 +136,56 @@ router.post("/post", auth.ensureLoggedIn, (req, res) => {
       console.error("Error saving post:", err);
       res.status(500).json({ error: "Could not save post", details: err.message });
     });
+});
+
+// Like a post
+router.post("/posts/:postId/like", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).send({ error: "Post not found" });
+    }
+
+    const userId = req.user._id;
+    const likeIndex = post.likes.indexOf(userId);
+
+    if (likeIndex === -1) {
+      // User hasn't liked the post yet, add like
+      post.likes.push(userId);
+    } else {
+      // User has already liked the post, remove like
+      post.likes.splice(likeIndex, 1);
+    }
+
+    await post.save();
+    res.send(post);
+  } catch (err) {
+    console.error("Error in /api/posts/:postId/like:", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
+});
+
+// Add a comment to a post
+router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.postId);
+    if (!post) {
+      return res.status(404).send({ error: "Post not found" });
+    }
+
+    const comment = {
+      creator_id: req.user._id,
+      creator_name: req.user.name,
+      content: req.body.content,
+    };
+
+    post.comments.push(comment);
+    await post.save();
+    res.send(post);
+  } catch (err) {
+    console.error("Error in /api/posts/:postId/comment:", err);
+    res.status(500).send({ error: "Internal server error" });
+  }
 });
 
 // Friend-related endpoints
