@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import NavBar from "../modules/NavBar";
 import { Send, Clock, Users, Trophy } from "lucide-react";
 import SinglePost from "../modules/SinglePost";
@@ -9,15 +9,58 @@ const Feed = () => {
   const { user } = useContext(UserContext);
   const [posts, setPosts] = useState([]);
 
+  useEffect(() => {
+    // Fetch posts when component mounts
+    console.log("Fetching posts...");
+    fetch("/api/posts", {
+      credentials: "include", // Important! This sends cookies with the request
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((postObjs) => {
+        console.log("Received posts:", postObjs);
+        setPosts(postObjs);
+      })
+      .catch((error) => {
+        console.error("Error fetching posts:", error);
+      });
+  }, []);
+
   const addNewPost = (postObj) => {
-    setPosts(
-      [
-        {
-          ...postObj,
-          timestamp: new Date().toLocaleString(),
-        },
-      ].concat(posts)
-    );
+    console.log("Adding new post:", postObj);
+    fetch("/api/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: postObj.content,
+        imageUrl: postObj.image, // This is what we send to the server
+      }),
+      credentials: "include", // Important! This sends cookies with the request
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((newPost) => {
+        console.log("Successfully added post:", newPost);
+        // Transform the response to match what SinglePost expects
+        const transformedPost = {
+          ...newPost,
+          image: newPost.imageUrl, // Convert imageUrl to image for display
+        };
+        setPosts([transformedPost].concat(posts));
+      })
+      .catch((error) => {
+        console.error("Error adding post:", error);
+      });
   };
 
   let postsList = null;
@@ -30,7 +73,7 @@ const Feed = () => {
         creator_name={postObj.creator_name}
         content={postObj.content}
         timestamp={postObj.timestamp}
-        image={postObj.image}
+        image={postObj.imageUrl || postObj.image} // Handle both property names
       />
     ));
   } else {

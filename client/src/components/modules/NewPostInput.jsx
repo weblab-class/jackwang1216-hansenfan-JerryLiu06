@@ -1,26 +1,52 @@
 import React, { useState, useRef, useContext } from "react";
 import { Image } from "lucide-react";
 import { UserContext } from "../App";
+import imageCompression from "browser-image-compression";
 import "./Card.css";
 
 const NewPostInput = ({ addNewPost }) => {
   const { user } = useContext(UserContext);
   const [value, setValue] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleChange = (event) => {
     setValue(event.target.value);
   };
 
-  const handleImageUpload = (event) => {
+  const compressImage = async (file) => {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+    
+    try {
+      const compressedFile = await imageCompression(file, options);
+      return compressedFile;
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      return file;
+    }
+  };
+
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      setUploading(true);
+      try {
+        const compressedFile = await compressImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+          setUploading(false);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error("Error handling image upload:", error);
+        setUploading(false);
+      }
     }
   };
 
@@ -28,6 +54,7 @@ const NewPostInput = ({ addNewPost }) => {
     event.preventDefault();
     if (value === "" || !imagePreview) return; // Require both text and image
     if (!user) return; // Don't allow posting if not logged in
+    if (uploading) return; // Don't allow posting while image is being processed
     
     addNewPost({
       _id: "id" + Math.random().toString(36).substr(2, 9),
@@ -123,9 +150,9 @@ const NewPostInput = ({ addNewPost }) => {
               : 'bg-gray-700 text-gray-400 cursor-not-allowed'
           }`}
           onClick={handleSubmit}
-          disabled={!value || !imagePreview}
+          disabled={!value || !imagePreview || uploading}
         >
-          Post
+          {uploading ? "Processing..." : "Post"}
         </button>
       </div>
     </div>

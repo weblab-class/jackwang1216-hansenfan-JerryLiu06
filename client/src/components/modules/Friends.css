@@ -1,0 +1,36 @@
+.Friends-container {
+  padding: 20px;
+}
+
+.Friends-section {
+  margin-bottom: 30px;
+}
+
+.Friends-list {
+  list-style: none;
+  padding: 0;
+}
+
+.Friends-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  margin: 5px 0;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+.Friends-button {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.Friends-button:hover {
+  background-color: #2563eb;
+}
