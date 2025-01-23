@@ -44,8 +44,8 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   return (
     <>
       <div className="relative group">
-        <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl opacity-100 blur-md group-hover:from-purple-500/50 group-hover:to-pink-500/50 group-hover:opacity-100 transition-all duration-500"></div>
-        <div className="bg-[#12141A]/90 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/50 group-hover:shadow-purple-500/20 transition-all duration-300">
+        <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl opacity-100 blur-md group-hover:from-purple-500/20 group-hover:to-pink-500/20 group-hover:opacity-100 transition-all duration-500"></div>
+        <div className="bg-[#12141A] backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/30 group-hover:shadow-purple-500/10 transition-all duration-300">
           {/* Post Header */}
           <div className="p-4 flex items-center space-x-3 border-b border-white/10">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
