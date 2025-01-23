@@ -44,8 +44,8 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   return (
     <>
       <div className="relative group">
-        <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
-        <div className="relative bg-[#12141A] rounded-xl border border-white/10 overflow-hidden">
+        <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl opacity-100 blur-md group-hover:from-purple-500/50 group-hover:to-pink-500/50 group-hover:opacity-100 transition-all duration-500"></div>
+        <div className="bg-[#12141A]/90 backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/50 group-hover:shadow-purple-500/20 transition-all duration-300">
           {/* Post Header */}
           <div className="p-4 flex items-center space-x-3 border-b border-white/10">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
@@ -105,7 +105,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Add a comment..."
-                  className="flex-1 px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="flex-1 px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 resize-none transition-all duration-200"
                 />
                 <button
                   type="submit"
@@ -227,79 +227,92 @@ const NewPostForm = ({ onSubmit }) => {
   };
 
   return (
-    <div className="bg-[#12141A] rounded-xl border border-white/10 p-4 space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Share your boldness..."
-          className="w-full px-4 py-3 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-          rows="3"
-        />
-        <div className="space-y-3">
-          <select
-            value={selectedChallenge}
-            onChange={(e) => setSelectedChallenge(e.target.value)}
-            className="w-full px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-            required
-          >
-            <option value="">Select a completed challenge</option>
-            {completedChallenges.map((challenge) => (
-              <option key={challenge._id} value={challenge._id}>
-                {challenge.title}
-              </option>
-            ))}
-          </select>
-          {!selectedChallenge && content.trim() && (
-            <p className="text-yellow-500 text-sm">Please select a challenge for your post</p>
-          )}
-        </div>
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => document.getElementById("image-input").click()}
-            className={`flex items-center space-x-2 px-4 py-2 ${
-              image ? 'bg-purple-500/20 text-purple-300' : 'bg-white/5 text-gray-400'
-            } rounded-lg hover:bg-white/10 transition-colors`}
-          >
-            <ImageIcon className="w-4 h-4" />
-            <span>{image ? 'Image Selected' : 'Add Image (Required)'}</span>
-          </button>
-          <button
-            type="submit"
-            disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
-            className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Post
-          </button>
-        </div>
-        <input
-          id="image-input"
-          type="file"
-          accept="image/*"
-          onChange={(e) => setImage(e.target.files[0])}
-          className="hidden"
-          required
-        />
-        {!image && content.trim() && (
-          <p className="text-yellow-500 text-sm">Please add an image to your post</p>
-        )}
-      </form>
-      {image && (
-        <div className="relative h-32 rounded-lg overflow-hidden">
-          <img
-            src={URL.createObjectURL(image)}
-            alt="Upload preview"
-            className="absolute inset-0 w-full h-full object-cover"
+    <div className="relative">
+      <div className="bg-[#12141A]/90 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 space-y-6 shadow-2xl hover:border-purple-500/30 hover:shadow-purple-500/10 transition-all duration-300">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Share your boldness..."
+            className="w-full px-5 py-4 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 resize-none transition-all duration-200"
+            rows="3"
           />
-          <button
-            onClick={() => setImage(null)}
-            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+          <div className="space-y-3">
+            <select
+              value={selectedChallenge}
+              onChange={(e) => setSelectedChallenge(e.target.value)}
+              className="w-full px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
+              required
+            >
+              <option value="">Select a completed challenge</option>
+              {completedChallenges.map((challenge) => (
+                <option key={challenge._id} value={challenge._id}>
+                  {challenge.title}
+                </option>
+              ))}
+            </select>
+            {!selectedChallenge && content.trim() && (
+              <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
+                <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
+                Please select a challenge for your post
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={() => document.getElementById("image-input").click()}
+              className={`flex items-center space-x-2 px-5 py-3 rounded-xl border shadow-sm shadow-purple-500/10 transition-all duration-300 ${
+                image
+                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/40 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20'
+                  : 'bg-white/5 text-gray-400 border-purple-500/10 hover:bg-white/15 hover:border-purple-500/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              <span>{image ? 'Image Selected' : 'Add Image (Required)'}</span>
+            </button>
+            <button
+              type="submit"
+              disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
+              className="px-8 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
+            >
+              {isSubmitting ? 'Posting...' : 'Post'}
+            </button>
+          </div>
+          <input
+            id="image-input"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files[0])}
+            className="hidden"
+            required
+          />
+          {!image && content.trim() && (
+            <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
+              <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
+              Please add an image to your post
+            </p>
+          )}
+        </form>
+        {image && (
+          <div className="relative rounded-xl overflow-hidden group/image shadow-sm shadow-purple-500/10">
+            <div className="aspect-[16/9]">
+              <img
+                src={URL.createObjectURL(image)}
+                alt="Upload preview"
+                className="absolute inset-0 w-full h-full object-cover transform group-hover/image:scale-105 transition-all duration-500"
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-100 group-hover/image:from-black/50 group-hover/image:opacity-100 transition-all duration-300"/>
+            <button
+              onClick={() => setImage(null)}
+              className="absolute top-3 right-3 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 hover:scale-110 transition-all duration-300 transform"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

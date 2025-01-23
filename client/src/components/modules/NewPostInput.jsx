@@ -85,76 +85,61 @@ const NewPostInput = ({ addNewPost }) => {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 mb-4 shadow-lg border border-gray-700">
+    <div className="bg-gray-800/80 backdrop-blur-sm rounded-xl p-6 mb-6 shadow-xl border border-gray-700/50 transition-all duration-200 hover:border-purple-500/30">
       <input
         type="text"
         placeholder="How did you step outside of your comfort zone today?"
         value={value}
         onChange={handleChange}
-        className="w-full p-2 mb-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+        className="w-full p-3 mb-4 bg-gray-900/90 border border-gray-700/50 rounded-xl text-white focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 placeholder:text-gray-500"
       />
       
       {!imagePreview && (
-        <div className="text-center p-8 border-2 border-dashed border-gray-700 rounded-lg mb-2">
+        <div className="text-center p-8 border-2 border-dashed border-gray-700/50 rounded-xl mb-4 transition-all duration-200 hover:border-purple-500/30 group">
           <input
             type="file"
             accept="image/*"
             onChange={handleImageUpload}
             ref={fileInputRef}
             className="hidden"
-            id="image-upload"
+            id="imageInput"
           />
           <label
-            htmlFor="image-upload"
-            className="flex flex-col items-center gap-2 cursor-pointer text-gray-400 hover:text-gray-300"
+            htmlFor="imageInput"
+            className="cursor-pointer flex flex-col items-center gap-2 text-gray-400 group-hover:text-purple-400 transition-colors duration-200"
           >
             <Image className="w-8 h-8" />
-            <span>Upload a photo of your bold moment</span>
-            <span className="text-sm">(required)</span>
+            <span>Click to add an image</span>
           </label>
         </div>
       )}
-      
+
       {imagePreview && (
-        <div className="relative mb-2">
-          <img 
-            src={imagePreview} 
-            alt="Preview" 
-            className="max-h-60 rounded-lg object-cover w-full"
+        <div className="relative mb-4">
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="w-full h-48 object-cover rounded-xl"
           />
           <button
             onClick={removeImage}
-            className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+            className="absolute top-2 right-2 bg-gray-900/80 text-white p-2 rounded-full hover:bg-red-500/80 transition-colors duration-200"
           >
             ×
           </button>
         </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <div className="flex items-center text-sm text-gray-400">
-          {imagePreview ? (
-            <span className="flex items-center gap-2">
-              <Image className="w-4 h-4" />
-              Photo added
-            </span>
-          ) : (
-            <span className="text-red-400">* Photo required</span>
-          )}
-        </div>
-        <button
-          type="submit"
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            value && imagePreview
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-          }`}
-          onClick={handleSubmit}
-          disabled={!value || !imagePreview || uploading}
-        >
-          {uploading ? "Processing..." : "Post"}
-        </button>
-      </div>
+      <button
+        onClick={handleSubmit}
+        disabled={!value || !imagePreview || uploading}
+        className={`w-full py-2.5 px-4 rounded-xl font-medium transition-all duration-200
+          ${value && imagePreview && !uploading
+            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+            : 'bg-gray-700/50 text-gray-400 cursor-not-allowed'}`}
+      >
+        {uploading ? 'Processing...' : 'Post'}
+      </button>
     </div>
   );
 };
