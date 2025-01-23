@@ -139,8 +139,8 @@ const Chat = () => {
   return (
     <div className="h-screen bg-[#0A0B0F] flex flex-col overflow-hidden">
       <NavBar />
-      <div className="flex-1 container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-        <div className="grid grid-cols-12 gap-6 h-full">
+      <div className="flex-1 container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-4rem)]">
           {/* Left Sidebar - Friends List */}
           <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-white/10 flex-shrink-0">
@@ -181,16 +181,24 @@ const Chat = () => {
           </div>
 
           {/* Main Chat Area */}
-          <div className="col-span-6 bg-[#12141A] rounded-xl border border-white/10 flex flex-col">
+          <div className="col-span-6 bg-[#12141A] rounded-xl border border-white/10 flex flex-col overflow-hidden backdrop-blur-lg shadow-2xl">
             {selectedUser ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-white/10 flex-shrink-0">
-                  <h2 className="text-lg font-medium text-white">{selectedUser.name}</h2>
+                <div className="p-4 border-b border-white/10 flex-shrink-0 bg-white/5 backdrop-blur-sm">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium ring-2 ring-purple-500/20">
+                      {selectedUser.name[0]}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-medium text-white">{selectedUser.name}</h2>
+                      <p className="text-sm text-gray-400">Online</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="flex-1 overflow-y-auto min-h-0 bg-gradient-to-b from-[#12141A] to-[#0A0B0F]">
                   <div className="p-4 space-y-4">
                     {messages.map((message) => (
                       <div
@@ -200,15 +208,18 @@ const Chat = () => {
                         }`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
+                          className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
                             message.sender._id === user._id
-                              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                              : "bg-white/5 text-gray-200"
+                              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20"
+                              : "bg-white/5 text-gray-200 shadow-lg shadow-white/5"
                           }`}
                         >
-                          <p>{message.content}</p>
-                          <p className="text-xs opacity-75 mt-1">
-                            {new Date(message.timestamp).toLocaleTimeString()}
+                          <p className="leading-relaxed">{message.content}</p>
+                          <p className="text-xs opacity-75 mt-1.5">
+                            {new Date(message.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </p>
                         </div>
                       </div>
@@ -218,19 +229,19 @@ const Chat = () => {
                 </div>
 
                 {/* Message Input */}
-                <div className="mt-auto p-4 border-t border-white/10 bg-[#12141A]">
+                <div className="mt-auto p-4 border-t border-white/10 bg-white/5 backdrop-blur-sm">
                   <form onSubmit={handleSend} className="flex space-x-4">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Type a message..."
-                      className="flex-1 bg-white/5 text-white placeholder-gray-400 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="flex-1 bg-white/5 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-shadow"
                     />
                     <button
                       type="submit"
                       disabled={!newMessage.trim()}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       <Send className="w-4 h-4" />
                       <span>Send</span>
@@ -239,8 +250,14 @@ const Chat = () => {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
-                Select a friend to start chatting
+              <div className="flex-1 flex items-center justify-center text-gray-400 bg-gradient-to-b from-[#12141A] to-[#0A0B0F]">
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-4">
+                    <Send className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <p className="text-lg">Select a friend to start chatting</p>
+                  <p className="text-sm text-gray-500">Your messages will appear here</p>
+                </div>
               </div>
             )}
           </div>
