@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { get, post as apiPost } from "../../utilities";
-import { Image as ImageIcon, Heart, MessageCircle, Share2, Calendar, Trophy, X } from "lucide-react";
+import {
+  Image as ImageIcon,
+  Heart,
+  MessageCircle,
+  Share2,
+  Calendar,
+  Trophy,
+  X,
+} from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
 const PostCard = ({ post, onLike, onComment, userId }) => {
@@ -56,6 +64,13 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span>{formattedDate}</span>
+                {post.challengeTitle && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <Trophy className="w-4 h-4 text-yellow-500" />
+                    <span className="text-yellow-500">{post.challengeTitle}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -64,7 +79,10 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
           <div className="p-4 space-y-4">
             <p className="text-gray-200">{post.content}</p>
             {post.imageUrl && (
-              <div className="relative rounded-lg overflow-hidden cursor-pointer" onClick={() => setShowImageModal(true)}>
+              <div
+                className="relative rounded-lg overflow-hidden cursor-pointer"
+                onClick={() => setShowImageModal(true)}
+              >
                 <img
                   src={post.imageUrl}
                   alt="Post content"
@@ -118,32 +136,32 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
 
               {/* Comments List */}
               <div className="space-y-3">
-                {post.comments && post.comments.map((comment, index) => (
-                  <div key={index} className="flex space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
-                      {comment.creator_name[0]}
-                    </div>
-                    <div className="flex-1 bg-white/5 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-white">{comment.creator_name}</span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(comment.timestamp).toLocaleDateString()}
-                        </span>
+                {post.comments &&
+                  post.comments.map((comment, index) => (
+                    <div key={index} className="flex space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
+                        {comment.creator_name[0]}
                       </div>
-                      <p className="text-sm text-gray-300">{comment.content}</p>
+                      <div className="flex-1 bg-white/5 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-white">
+                            {comment.creator_name}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(comment.timestamp).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-300">{comment.content}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
         </div>
       </div>
       {showImageModal && (
-        <ImageModal
-          imageUrl={post.imageUrl}
-          onClose={() => setShowImageModal(false)}
-        />
+        <ImageModal imageUrl={post.imageUrl} onClose={() => setShowImageModal(false)} />
       )}
     </>
   );
@@ -153,14 +171,17 @@ const ImageModal = ({ imageUrl, onClose }) => {
   if (!imageUrl) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
       <div className="relative w-full h-full flex items-center justify-center">
         <img
           src={imageUrl}
           alt="Enlarged view"
           className="max-w-full max-h-full object-contain"
           onClick={(e) => e.stopPropagation()}
-          style={{ maxHeight: 'calc(100vh - 2rem)' }}
+          style={{ maxHeight: "calc(100vh - 2rem)" }}
         />
         <button
           onClick={onClose}
@@ -209,12 +230,12 @@ const NewPostForm = ({ onSubmit }) => {
     setIsSubmitting(true);
     try {
       const imageUrl = await convertToBase64(image);
-      const challenge = completedChallenges.find(c => c._id === selectedChallenge);
+      const challenge = completedChallenges.find((c) => c._id === selectedChallenge);
       await onSubmit({
         content,
         imageUrl,
         challenge: selectedChallenge,
-        challengeTitle: challenge.title
+        challengeTitle: challenge.title,
       });
       setContent("");
       setImage(null);
@@ -264,19 +285,19 @@ const NewPostForm = ({ onSubmit }) => {
               onClick={() => document.getElementById("image-input").click()}
               className={`flex items-center space-x-2 px-5 py-3 rounded-xl border shadow-sm shadow-purple-500/10 transition-all duration-300 ${
                 image
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/40 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20'
-                  : 'bg-white/5 text-gray-400 border-purple-500/10 hover:bg-white/15 hover:border-purple-500/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20'
+                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/40 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
+                  : "bg-white/5 text-gray-400 border-purple-500/10 hover:bg-white/15 hover:border-purple-500/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
               }`}
             >
               <ImageIcon className="w-4 h-4" />
-              <span>{image ? 'Image Selected' : 'Add Image (Required)'}</span>
+              <span>{image ? "Image Selected" : "Add Image (Required)"}</span>
             </button>
             <button
               type="submit"
               disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
               className="px-8 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
             >
-              {isSubmitting ? 'Posting...' : 'Post'}
+              {isSubmitting ? "Posting..." : "Post"}
             </button>
           </div>
           <input
@@ -303,7 +324,7 @@ const NewPostForm = ({ onSubmit }) => {
                 className="absolute inset-0 w-full h-full object-cover transform group-hover/image:scale-105 transition-all duration-500"
               />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-100 group-hover/image:from-black/50 group-hover/image:opacity-100 transition-all duration-300"/>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-100 group-hover/image:from-black/50 group-hover/image:opacity-100 transition-all duration-300" />
             <button
               onClick={() => setImage(null)}
               className="absolute top-3 right-3 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 hover:scale-110 transition-all duration-300 transform"
@@ -346,22 +367,14 @@ const Feed = () => {
   };
 
   const handleLike = (postId, newLikes) => {
-    setPosts(currentPosts =>
-      currentPosts.map(post =>
-        post._id === postId
-          ? { ...post, likes: newLikes }
-          : post
-      )
+    setPosts((currentPosts) =>
+      currentPosts.map((post) => (post._id === postId ? { ...post, likes: newLikes } : post))
     );
   };
 
   const handleComment = (postId, newComments) => {
-    setPosts(currentPosts =>
-      currentPosts.map(post =>
-        post._id === postId
-          ? { ...post, comments: newComments }
-          : post
-      )
+    setPosts((currentPosts) =>
+      currentPosts.map((post) => (post._id === postId ? { ...post, comments: newComments } : post))
     );
   };
 
