@@ -64,11 +64,11 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
           <div className="p-4 space-y-4">
             <p className="text-gray-200">{post.content}</p>
             {post.imageUrl && (
-              <div className="relative h-64 rounded-lg overflow-hidden cursor-pointer" onClick={() => setShowImageModal(true)}>
+              <div className="relative rounded-lg overflow-hidden cursor-pointer" onClick={() => setShowImageModal(true)}>
                 <img
                   src={post.imageUrl}
                   alt="Post content"
-                  className="absolute inset-0 w-full h-full object-cover hover:opacity-90 transition-opacity"
+                  className="w-full max-h-[500px] object-contain hover:opacity-90 transition-opacity"
                 />
               </div>
             )}
