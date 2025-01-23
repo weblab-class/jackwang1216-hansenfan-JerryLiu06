@@ -22,8 +22,10 @@ const Chat = () => {
 
     // Listen for new messages
     socket.on("message", (message) => {
-      if (selectedUser &&
-          (message.sender._id === selectedUser._id || message.recipient._id === selectedUser._id)) {
+      if (
+        selectedUser &&
+        (message.sender._id === selectedUser._id || message.recipient._id === selectedUser._id)
+      ) {
         setMessages((prevMessages) => [...prevMessages, message]);
       }
     });
@@ -77,11 +79,9 @@ const Chat = () => {
   const sendFriendRequest = async (userId) => {
     try {
       await post(`/api/friend-request/${userId}`);
-      setSearchResults(searchResults.map(user =>
-        user._id === userId
-          ? { ...user, requestSent: true }
-          : user
-      ));
+      setSearchResults(
+        searchResults.map((user) => (user._id === userId ? { ...user, requestSent: true } : user))
+      );
     } catch (err) {
       console.log("Failed to send friend request", err);
     }
@@ -90,7 +90,7 @@ const Chat = () => {
   const acceptFriendRequest = async (userId) => {
     try {
       const newFriend = await post(`/api/friend-request/${userId}/accept`);
-      setFriendRequests(friendRequests.filter(request => request._id !== userId));
+      setFriendRequests(friendRequests.filter((request) => request._id !== userId));
       setFriends([...friends, newFriend]);
     } catch (err) {
       console.log("Failed to accept friend request", err);
@@ -100,7 +100,7 @@ const Chat = () => {
   const rejectFriendRequest = async (userId) => {
     try {
       await post(`/api/friend-request/${userId}/reject`);
-      setFriendRequests(friendRequests.filter(request => request._id !== userId));
+      setFriendRequests(friendRequests.filter((request) => request._id !== userId));
     } catch (err) {
       console.log("Failed to reject friend request", err);
     }
@@ -137,10 +137,10 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0B0F] flex flex-col">
+    <div className="h-screen bg-[#0A0B0F] flex flex-col overflow-hidden">
       <NavBar />
-      <div className="flex-1 container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-12 gap-6 h-[calc(100vh-8rem)]">
+      <div className="flex-1 container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        <div className="grid grid-cols-12 gap-6 h-full">
           {/* Left Sidebar - Friends List */}
           <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-white/10 flex-shrink-0">
@@ -253,10 +253,7 @@ const Chat = () => {
 
             <div className="flex-1 p-4 space-y-4">
               {friendRequests.map((request) => (
-                <div
-                  key={request._id}
-                  className="p-4 bg-white/5 rounded-lg space-y-3"
-                >
+                <div key={request._id} className="p-4 bg-white/5 rounded-lg space-y-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
                       {request.sender.name[0]}
