@@ -148,7 +148,7 @@ const Chat = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search friends..."
+                  placeholder="Add a friend..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -302,12 +302,19 @@ const Chat = () => {
                       className="flex items-center justify-between p-3 bg-white/5 rounded-lg mb-2"
                     >
                       <span className="text-white">{user.name}</span>
-                      <button
-                        onClick={() => sendFriendRequest(user._id)}
-                        className="p-2 text-purple-400 hover:text-purple-300 transition-colors"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                      </button>
+                      {user.requestSent ? (
+                        <span className="text-sm text-purple-400 flex items-center gap-1">
+                          <Check className="w-4 h-4" />
+                          Request Sent
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => sendFriendRequest(user._id)}
+                          className="p-2 text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
