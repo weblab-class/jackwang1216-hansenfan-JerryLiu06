@@ -38,7 +38,7 @@ const NavBar = () => {
 
             <NavLink to="/howtoplay" isActive={isActive("/howtoplay")}>
               <CircleHelp className="w-4 h-4" />
-              <span>How to Play</span>
+              <span>About</span>
             </NavLink>
           </div>
 
@@ -69,9 +69,7 @@ const NavLink = ({ to, isActive, children }) => {
     <Link
       to={to}
       className={`flex items-center space-x-2 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-        isActive
-          ? "text-white bg-white/10"
-          : "text-gray-400 hover:text-white hover:bg-white/5"
+        isActive ? "text-white bg-white/10" : "text-gray-400 hover:text-white hover:bg-white/5"
       }`}
     >
       {children}

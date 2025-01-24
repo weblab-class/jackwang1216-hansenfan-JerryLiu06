@@ -1,4 +1,5 @@
-import OpenAI from "openai";
+const { OpenAI } = require("openai");
+require("dotenv").config();
 
 // Add debugging logs
 console.log("OpenAI API Key:", "Present");
@@ -44,6 +45,6 @@ const generateChallenge = async (difficulty = "Intermediate") => {
   }
 };
 
-export default {
+module.exports = {
   generateChallenge,
 };

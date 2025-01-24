@@ -14,7 +14,7 @@ const User = require("./models/user");
 const Post = require("./models/post");
 const Message = require("./models/message");
 const Challenge = require("./models/challenge");
-const { generateChallenge } = require("./services/openai").default;
+const { generateChallenge } = require("./services/openai");
 
 // import authentication library
 const auth = require("./auth");
@@ -88,7 +88,7 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
       creator_id: req.user._id,
       creator_name: req.user.name,
       content: req.body.content,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     await post.save();
@@ -125,7 +125,7 @@ router.post("/post", auth.ensureLoggedIn, async (req, res) => {
     const challenge = await Challenge.findOne({
       _id: req.body.challenge,
       creator: req.user._id,
-      completed: true
+      completed: true,
     });
 
     if (!challenge) {
@@ -138,7 +138,7 @@ router.post("/post", auth.ensureLoggedIn, async (req, res) => {
       content: req.body.content,
       imageUrl: req.body.imageUrl || "",
       challenge: challenge._id,
-      challengeTitle: challenge.title
+      challengeTitle: challenge.title,
     });
 
     const savedPost = await newPost.save();
@@ -327,7 +327,9 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
 // Challenge-related endpoints
 router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenges = await Challenge.find({ creator: req.user._id }).populate("creator", "name").sort({ createdAt: -1 });
+    const challenges = await Challenge.find({ creator: req.user._id })
+      .populate("creator", "name")
+      .sort({ createdAt: -1 });
     res.send(challenges);
   } catch (err) {
     console.error("Error getting challenges:", err);
@@ -381,7 +383,7 @@ router.post("/challenges/:challengeId/complete", auth.ensureLoggedIn, async (req
   try {
     const challenge = await Challenge.findOne({
       _id: req.params.challengeId,
-      creator: req.user._id
+      creator: req.user._id,
     });
 
     if (!challenge) {
@@ -425,7 +427,7 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
   try {
     const challenges = await Challenge.find({
       creator: req.user._id,
-      completed: true
+      completed: true,
     }).sort({ completedAt: -1 });
     res.send(challenges);
   } catch (err) {
@@ -438,14 +440,12 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
     // Get user data
-    const user = await User.findById(req.user._id)
-      .populate("friends")
-      .populate("friendRequests");
+    const user = await User.findById(req.user._id).populate("friends").populate("friendRequests");
 
     // Get completed challenges
     const completedChallenges = await Challenge.find({
       creator: req.user._id,
-      completed: true
+      completed: true,
     });
 
     // Calculate current streak
@@ -457,7 +457,7 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
     const recentCompletions = await Challenge.find({
       creator: req.user._id,
       completed: true,
-      completedAt: { $exists: true }
+      completedAt: { $exists: true },
     }).sort({ completedAt: -1 });
 
     let currentStreak = 0;
@@ -465,14 +465,17 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
       const lastCompletion = new Date(recentCompletions[0].completedAt);
       lastCompletion.setHours(0, 0, 0, 0);
 
-      if (lastCompletion.getTime() === today.getTime() || lastCompletion.getTime() === yesterday.getTime()) {
+      if (
+        lastCompletion.getTime() === today.getTime() ||
+        lastCompletion.getTime() === yesterday.getTime()
+      ) {
         currentStreak = 1;
         let checkDate = yesterday;
-        
+
         for (let i = 1; i < recentCompletions.length; i++) {
           const completionDate = new Date(recentCompletions[i].completedAt);
           completionDate.setHours(0, 0, 0, 0);
-          
+
           if (completionDate.getTime() === checkDate.getTime()) {
             currentStreak++;
             checkDate.setDate(checkDate.getDate() - 1);
@@ -487,31 +490,32 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
     const [recentChallenges, recentPosts] = await Promise.all([
       Challenge.find({
         creator: req.user._id,
-        completed: true
+        completed: true,
       })
         .sort({ completedAt: -1 })
         .limit(5),
       Post.find({
-        creator_id: req.user._id
+        creator_id: req.user._id,
       })
         .sort({ timestamp: -1 })
-        .limit(5)
+        .limit(5),
     ]);
 
     // Combine and sort recent activity
     const recentActivity = [
-      ...recentChallenges.map(challenge => ({
-        type: 'challenge',
+      ...recentChallenges.map((challenge) => ({
+        type: "challenge",
         description: `Completed challenge: ${challenge.title}`,
-        timestamp: challenge.completedAt
+        timestamp: challenge.completedAt,
       })),
-      ...recentPosts.map(post => ({
-        type: 'post',
+      ...recentPosts.map((post) => ({
+        type: "post",
         description: `Posted about challenge: ${post.challengeTitle}`,
-        timestamp: post.timestamp
-      }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 5);
+        timestamp: post.timestamp,
+      })),
+    ]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 5);
 
     // Calculate total points (XP)
     const points = user.xp || 0;
@@ -522,7 +526,7 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
       currentStreak,
       friends: user.friends || [],
       friendRequests: user.friendRequests || [],
-      recentActivity
+      recentActivity,
     });
   } catch (err) {
     console.error("Error getting profile data:", err);
