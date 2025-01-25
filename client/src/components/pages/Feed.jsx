@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { get, post as apiPost } from "../../utilities";
 import {
   Image as ImageIcon,
@@ -341,6 +341,10 @@ const NewPostForm = ({ onSubmit }) => {
 const Feed = () => {
   const [posts, setPosts] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const POSTS_PER_PAGE = 10;
 
   useEffect(() => {
     get("/api/whoami").then((user) => {
@@ -351,16 +355,45 @@ const Feed = () => {
     loadPosts();
   }, []);
 
-  const loadPosts = () => {
-    get("/api/posts").then((postsObjs) => {
-      setPosts(postsObjs);
+  // Add intersection observer for infinite scroll
+  const observer = useRef();
+  const lastPostElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prevPage => prevPage + 1);
+      }
     });
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
+
+  useEffect(() => {
+    loadPosts();
+  }, [page]);
+
+  const loadPosts = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+    try {
+      const response = await get("/api/posts", { 
+        limit: POSTS_PER_PAGE, 
+        skip: page * POSTS_PER_PAGE 
+      });
+      setPosts(prevPosts => page === 0 ? response.posts : [...prevPosts, ...response.posts]);
+      setHasMore(response.hasMore);
+    } catch (err) {
+      console.error("Error loading posts:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNewPost = async (post) => {
     try {
       await apiPost("/api/post", post);
-      loadPosts();
+      setPage(0); // Reset to first page
+      loadPosts(); // Reload posts from beginning
     } catch (err) {
       console.error("Error creating post:", err);
     }
@@ -384,15 +417,35 @@ const Feed = () => {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <NewPostForm onSubmit={handleNewPost} />
         <div className="space-y-6 mt-8">
-          {posts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={post}
-              onLike={handleLike}
-              onComment={handleComment}
-              userId={userId}
-            />
-          ))}
+          {posts.map((post, index) => {
+            if (posts.length === index + 1) {
+              return (
+                <div ref={lastPostElementRef} key={post._id}>
+                  <PostCard
+                    post={post}
+                    userId={userId}
+                    onLike={handleLike}
+                    onComment={handleComment}
+                  />
+                </div>
+              );
+            } else {
+              return (
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  userId={userId}
+                  onLike={handleLike}
+                  onComment={handleComment}
+                />
+              );
+            }
+          })}
+          {loading && (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+          )}
         </div>
       </div>
     </div>

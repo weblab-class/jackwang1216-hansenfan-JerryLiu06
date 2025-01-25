@@ -157,6 +157,7 @@ const Chat = () => {
               </div>
             </div>
 
+            <h1 className="px-6 py-4 text-white text-lg font-semibold">Your Friends</h1>
             <div className="flex-1 p-2 space-y-1 overflow-y-auto">
               {friends.map((friend) => (
                 <button
@@ -168,6 +169,7 @@ const Chat = () => {
                       : "text-gray-400 hover:bg-white/5 hover:text-white"
                   }`}
                 >
+
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
                     {friend.name[0]}
                   </div>
@@ -265,7 +267,7 @@ const Chat = () => {
           {/* Right Sidebar - Friend Requests */}
           <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-white/10">
-              <h3 className="text-lg font-medium text-white">Friend Requests</h3>
+              <h3 className="text-lg font-semibold text-white">Friend Requests</h3>
             </div>
 
             <div className="flex-1 p-4 space-y-4">

@@ -101,12 +101,25 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
 
 // Get all posts
 router.get("/posts", (req, res) => {
-  console.log("GET /api/posts called");
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = parseInt(req.query.skip) || 0;
+  
   Post.find({})
     .sort({ timestamp: -1 })
+    .skip(skip)
+    .limit(limit)
     .then((posts) => {
-      console.log("Found posts:", posts);
-      res.send(posts);
+      Post.countDocuments({}).then((total) => {
+        res.send({
+          posts,
+          hasMore: skip + posts.length < total,
+          total
+        });
+      });
+    })
+    .catch((err) => {
+      console.error("Error fetching posts:", err);
+      res.status(500).send({ error: "Failed to fetch posts" });
     });
 });
 
