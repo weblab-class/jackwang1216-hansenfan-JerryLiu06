@@ -138,11 +138,10 @@ router.post("/post", auth.ensureLoggedIn, async (req, res) => {
     const challenge = await Challenge.findOne({
       _id: req.body.challenge,
       creator: req.user._id,
-      completed: true,
     });
 
     if (!challenge) {
-      return res.status(400).json({ error: "Invalid or incomplete challenge selected" });
+      return res.status(400).json({ error: "Invalid challenge selected" });
     }
 
     const newPost = new Post({
@@ -152,6 +151,7 @@ router.post("/post", auth.ensureLoggedIn, async (req, res) => {
       imageUrl: req.body.imageUrl || "",
       challenge: challenge._id,
       challengeTitle: challenge.title,
+      isProgressUpdate: !challenge.completed,
     });
 
     const savedPost = await newPost.save();

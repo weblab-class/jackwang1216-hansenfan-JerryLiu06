@@ -18,6 +18,10 @@ const PostSchema = new mongoose.Schema({
     required: true,
   },
   challengeTitle: String,
+  isProgressUpdate: {
+    type: Boolean,
+    default: false,
+  },
   likes: {
     type: [String],
     default: [],

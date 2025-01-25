@@ -8,6 +8,7 @@ import {
   Calendar,
   Trophy,
   X,
+  Hourglass
 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
@@ -68,7 +69,12 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                   <>
                     <span className="mx-1">•</span>
                     <Trophy className="w-4 h-4 text-yellow-500" />
-                    <span className="text-yellow-500">{post.challengeTitle}</span>
+                    <span
+                      className={`${post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"}`}
+                    >
+                      {post.challengeTitle}
+                      {post.isProgressUpdate && " (In Progress)"}
+                    </span>
                   </>
                 )}
               </div>
@@ -198,20 +204,20 @@ const NewPostForm = ({ onSubmit }) => {
   const [content, setContent] = useState("");
   const [image, setImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [completedChallenges, setCompletedChallenges] = useState([]);
+  const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState("");
 
   useEffect(() => {
-    // Fetch completed challenges when component mounts
-    const loadCompletedChallenges = async () => {
+    // Fetch all challenges when component mounts
+    const loadChallenges = async () => {
       try {
-        const challenges = await get("/api/challenges/completed");
-        setCompletedChallenges(challenges);
+        const challenges = await get("/api/challenges");
+        setChallenges(challenges);
       } catch (err) {
-        console.error("Error loading completed challenges:", err);
+        console.error("Error loading challenges:", err);
       }
     };
-    loadCompletedChallenges();
+    loadChallenges();
   }, []);
 
   const convertToBase64 = (file) => {
@@ -230,7 +236,7 @@ const NewPostForm = ({ onSubmit }) => {
     setIsSubmitting(true);
     try {
       const imageUrl = await convertToBase64(image);
-      const challenge = completedChallenges.find((c) => c._id === selectedChallenge);
+      const challenge = challenges.find((c) => c._id === selectedChallenge);
       await onSubmit({
         content,
         imageUrl,
@@ -265,10 +271,10 @@ const NewPostForm = ({ onSubmit }) => {
               className="w-full px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
               required
             >
-              <option value="">Select a completed challenge</option>
-              {completedChallenges.map((challenge) => (
+              <option value="">Select a challenge</option>
+              {challenges.map((challenge) => (
                 <option key={challenge._id} value={challenge._id}>
-                  {challenge.title}
+                  {challenge.title} {challenge.completed ? "✓" : "⌛️"}
                 </option>
               ))}
             </select>
