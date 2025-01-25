@@ -1,5 +1,5 @@
-import React, { useState, useEffect, createContext } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, useEffect, createContext, useContext } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import jwt_decode from "jwt-decode";
 
 import { socket } from "../client-socket";
@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import Challenges from "./pages/Challenges";
 import HowToPlay from "./pages/HowToPlay";
 import Chat from "./pages/Chat";
+import InitialQuestionnaire from "./pages/InitialQuestionnaire";
 
 export const UserContext = createContext(null);
 
@@ -23,6 +24,7 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     get("/api/whoami")
@@ -43,19 +45,20 @@ const App = () => {
   }, []);
 
   const handleLogin = (credentialResponse) => {
-    const userToken = credentialResponse.credential;
-    const decodedCredential = jwt_decode(userToken);
-    console.log(`Logged in as ${decodedCredential.name}`);
-    post("/api/login", { token: userToken })
-      .then((user) => {
-        setUserId(user._id);
-        setUser(user);
-        post("/api/initsocket", { socketid: socket.id });
-      })
-      .catch((err) => {
-        console.log("Failed to login:", err);
-        setError(err);
-      });
+    const token = credentialResponse.credential;
+    post("/api/login", { token }).then((user) => {
+      setUserId(user._id);
+      setUser(user);
+      post("/api/initsocket", { socketid: socket.id });
+      // If user hasn't completed the questionnaire, redirect them
+      if (!user.hasCompletedQuestionnaire) {
+        navigate("/questionnaire");
+      }
+    })
+    .catch((err) => {
+      console.log("Failed to login:", err);
+      setError(err);
+    });
   };
 
   const handleLogout = () => {
@@ -99,6 +102,7 @@ const App = () => {
             <Route path="/chat" element={<Chat />} />
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/howtoplay" element={<HowToPlay />} />
+            <Route path="/questionnaire" element={<InitialQuestionnaire />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         ) : (

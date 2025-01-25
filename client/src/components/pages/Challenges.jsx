@@ -14,7 +14,7 @@ const ChallengeCard = ({ challenge, onComplete }) => {
           </div>
           <div className="flex items-center space-x-2">
             <Star className="w-5 h-5 text-yellow-400" />
-            <span className="text-white font-medium">{challenge.xpReward} XP</span>
+            <span className="text-white font-medium">{challenge.points} Points</span>
           </div>
         </div>
         

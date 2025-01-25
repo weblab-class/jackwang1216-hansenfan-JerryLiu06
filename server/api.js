@@ -363,43 +363,30 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
 
 router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
-    console.log("Challenge generation request received");
-    const { difficulty = "Intermediate" } = req.body;
-    console.log("Requesting challenge with difficulty:", difficulty);
+    const user = await User.findById(req.user._id);
+    if (!user.hasCompletedQuestionnaire) {
+      return res.status(400).send({ 
+        error: "Please complete the initial questionnaire before generating challenges",
+        redirectTo: "/questionnaire"
+      });
+    }
 
-    console.log("Calling OpenAI service...");
-    const challengeData = await generateChallenge(difficulty);
-    console.log("Received challenge data:", challengeData);
-
-    console.log("Creating new Challenge document...");
-    const challenge = new Challenge({
-      ...challengeData,
+    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", user.userProfile);
+    
+    const newChallenge = new Challenge({
+      title: challenge.title,
+      description: challenge.description,
+      points: challenge.points,
+      difficulty: req.body.difficulty || "Intermediate",
       creator: req.user._id,
       deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
-    console.log("Saving challenge to database...");
-    await challenge.save();
-    console.log("Challenge saved successfully");
-    res.send(challenge);
+    await newChallenge.save();
+    res.send(newChallenge);
   } catch (err) {
-    console.error("Full error object:", err);
-    console.error("Error in challenge generation endpoint:", {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-      response: err.response
-        ? {
-            status: err.response.status,
-            data: err.response.data,
-          }
-        : null,
-    });
-    res.status(500).send({
-      error: "Could not generate challenge",
-      details: err.message,
-      name: err.name,
-    });
+    console.error("Error generating challenge:", err);
+    res.status(500).send({ error: "Failed to generate challenge" });
   }
 });
 
@@ -418,10 +405,10 @@ router.post("/challenges/:challengeId/complete", auth.ensureLoggedIn, async (req
     challenge.completedAt = new Date();
     await challenge.save();
 
-    // TODO: Add XP to user's total here
+    // Update user's total points
     const user = await User.findById(req.user._id);
     if (user) {
-      user.xp = (user.xp || 0) + challenge.xpReward;
+      user.points = (user.points || 0) + challenge.points;
       await user.save();
     }
 
@@ -542,7 +529,7 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
       .slice(0, 5);
 
     // Calculate total points (XP)
-    const points = user.xp || 0;
+    const points = user.points || 0;
 
     res.json({
       points,
@@ -555,6 +542,35 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error getting profile data:", err);
     res.status(500).send({ error: "Failed to get profile data" });
+  }
+});
+
+router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    user.userProfile = req.body.userProfile;
+    user.hasCompletedQuestionnaire = true;
+    await user.save();
+
+    res.send(user);
+  } catch (err) {
+    console.error("Error saving user profile:", err);
+    res.status(500).send({ error: "Failed to save user profile" });
+  }
+});
+
+// One-time cleanup endpoint - will be removed after use
+router.delete("/admin/challenges/cleanup", async (req, res) => {
+  try {
+    const result = await Challenge.deleteMany({});
+    res.send({ message: `${result.deletedCount} challenges deleted successfully` });
+  } catch (err) {
+    console.error("Error deleting challenges:", err);
+    res.status(500).send({ error: "Failed to delete challenges" });
   }
 });
 

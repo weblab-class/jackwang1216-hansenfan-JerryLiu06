@@ -8,7 +8,12 @@ const ChallengeSchema = new mongoose.Schema({
     enum: ["Beginner", "Intermediate", "Advanced"],
     default: "Intermediate",
   },
-  xpReward: Number,
+  points: {
+    type: Number,
+    min: 1,
+    max: 10,
+    required: true
+  },
   deadline: Date,
   creator: {
     type: mongoose.Schema.Types.ObjectId,
