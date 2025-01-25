@@ -24,9 +24,9 @@ const StatCard = ({ icon: Icon, title, value }) => (
 const ActivityCard = ({ activity }) => {
   const getIcon = (type) => {
     switch (type) {
-      case 'challenge':
+      case "challenge":
         return Trophy;
-      case 'post':
+      case "post":
         return MessageCircle;
       default:
         return Activity;
@@ -93,30 +93,19 @@ const Profile = () => {
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mt-6">{user?.name || "Loading..."}</h1>
+          <p className="text-sm text-gray-400 mt-1">ID: {user?._id || "Loading..."}</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <StatCard
-            icon={Trophy}
-            title="Total Points"
-            value={profile.points}
-          />
-          <StatCard
-            icon={Star}
-            title="Completed Challenges"
-            value={profile.completedChallenges}
-          />
+          <StatCard icon={Trophy} title="Total Points" value={profile.points} />
+          <StatCard icon={Star} title="Completed Challenges" value={profile.completedChallenges} />
           <StatCard
             icon={Activity}
             title="Current Streak"
             value={`${profile.currentStreak} days`}
           />
-          <StatCard
-            icon={Users}
-            title="Friends"
-            value={profile.friends.length}
-          />
+          <StatCard icon={Users} title="Friends" value={profile.friends.length} />
         </div>
 
         {/* Recent Activity */}

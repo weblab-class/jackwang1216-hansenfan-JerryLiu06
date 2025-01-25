@@ -103,7 +103,7 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
 router.get("/posts", (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = parseInt(req.query.skip) || 0;
-  
+
   Post.find({})
     .sort({ timestamp: -1 })
     .skip(skip)
@@ -113,7 +113,7 @@ router.get("/posts", (req, res) => {
         res.send({
           posts,
           hasMore: skip + posts.length < total,
-          total
+          total,
         });
       });
     })
@@ -190,10 +190,21 @@ router.get("/friend-requests", auth.ensureLoggedIn, (req, res) => {
 
 router.get("/users/search/:query", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const users = await User.find({
-      _id: { $ne: req.user._id },
-      name: new RegExp(req.params.query, "i"),
-    });
+    let users;
+    const query = req.params.query;
+
+    // Check if the query is a valid MongoDB ObjectId
+    if (query.match(/^[0-9a-fA-F]{24}$/)) {
+      // If it's a valid ID, search by ID
+      const user = await User.findById(query);
+      users = user ? [user] : [];
+    } else {
+      // Otherwise, search by name
+      users = await User.find({
+        _id: { $ne: req.user._id },
+        name: new RegExp(query, "i"),
+      });
+    }
 
     const currentUser = await User.findById(req.user._id);
     const results = users.map((user) => ({

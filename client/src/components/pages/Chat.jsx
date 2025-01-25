@@ -144,18 +144,74 @@ const Chat = () => {
           {/* Left Sidebar - Friends List */}
           <div className="col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col">
             <div className="p-4 border-b border-white/10 flex-shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Add a friend..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Add by name or ID..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    className="w-full pl-10 pr-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <button
+                  onClick={handleSearch}
+                  className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
               </div>
             </div>
+
+            {searchResults.length > 0 && (
+              <div className="px-4 py-2 border-b border-white/10">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">Search Results</h3>
+                <div className="space-y-2">
+                  {searchResults.map((result) => (
+                    <div
+                      key={result._id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
+                          {result.name[0]}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm">{result.name}</p>
+                          <p className="text-xs text-gray-400">ID: {result._id}</p>
+                        </div>
+                      </div>
+                      {!result.isFriend && !result.requestSent && (
+                        <button
+                          onClick={() => sendFriendRequest(result._id)}
+                          className="p-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </button>
+                      )}
+                      {result.requestSent && (
+                        <button
+                          disabled
+                          className="p-1.5 bg-purple-500/50 text-white rounded-lg"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                      {result.isFriend && (
+                        <button
+                          disabled
+                          className="p-1.5 bg-green-500/50 text-white rounded-lg"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <h1 className="px-6 py-4 text-white text-lg font-semibold">Your Friends</h1>
             <div className="flex-1 p-2 space-y-1 overflow-y-auto">
