@@ -57,6 +57,7 @@ const Challenges = ({ userId }) => {
   const [challenges, setChallenges] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("available");
 
   useEffect(() => {
     loadChallenges();
@@ -129,19 +130,58 @@ const Challenges = ({ userId }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {challenges.map((challenge) => (
-            <ChallengeCard
-              key={challenge._id}
-              challenge={challenge}
-              onComplete={handleCompleteChallenge}
-            />
-          ))}
+        <div className="mb-6 flex space-x-4 border-b border-white/10">
+          <button
+            onClick={() => setActiveTab("available")}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+              activeTab === "available"
+                ? "text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Available
+            {activeTab === "available" && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("completed")}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+              activeTab === "completed"
+                ? "text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Completed
+            {activeTab === "completed" && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
+            )}
+          </button>
         </div>
 
-        {challenges.length === 0 && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {challenges
+            .filter((challenge) =>
+              activeTab === "available" ? !challenge.completed : challenge.completed
+            )
+            .map((challenge) => (
+              <ChallengeCard
+                key={challenge._id}
+                challenge={challenge}
+                onComplete={handleCompleteChallenge}
+              />
+            ))}
+        </div>
+
+        {challenges.filter((challenge) =>
+          activeTab === "available" ? !challenge.completed : challenge.completed
+        ).length === 0 && !error && (
           <div className="text-center py-12">
-            <p className="text-gray-400">No challenges yet. Generate one to get started!</p>
+            <p className="text-gray-400">
+              {activeTab === "available"
+                ? "No available challenges. Generate one to get started!"
+                : "No completed challenges yet. Complete some challenges to see them here!"}
+            </p>
           </div>
         )}
       </div>

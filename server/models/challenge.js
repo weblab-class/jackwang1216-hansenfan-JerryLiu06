@@ -6,26 +6,26 @@ const ChallengeSchema = new mongoose.Schema({
   difficulty: {
     type: String,
     enum: ["Beginner", "Intermediate", "Advanced"],
-    default: "Intermediate"
+    default: "Intermediate",
   },
   xpReward: Number,
   deadline: Date,
   creator: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "user"
+    ref: "user",
   },
   completed: {
     type: Boolean,
-    default: false
+    default: false,
   },
   completedAt: {
     type: Date,
-    default: null
+    default: null,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Challenge", ChallengeSchema);

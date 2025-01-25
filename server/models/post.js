@@ -15,18 +15,18 @@ const PostSchema = new mongoose.Schema({
   challenge: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "challenge",
-    required: true
+    required: true,
   },
   challengeTitle: String,
   likes: {
     type: [String],
-    default: []
+    default: [],
   },
   comments: {
     type: [CommentSchema],
-    default: []
+    default: [],
   },
-  timestamp: { type: Date, default: Date.now }
+  timestamp: { type: Date, default: Date.now },
 });
 
 // compile model from schema

@@ -357,16 +357,19 @@ const Feed = () => {
 
   // Add intersection observer for infinite scroll
   const observer = useRef();
-  const lastPostElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prevPage => prevPage + 1);
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
+  const lastPostElementRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
 
   useEffect(() => {
     loadPosts();
@@ -376,11 +379,11 @@ const Feed = () => {
     if (loading || !hasMore) return;
     setLoading(true);
     try {
-      const response = await get("/api/posts", { 
-        limit: POSTS_PER_PAGE, 
-        skip: page * POSTS_PER_PAGE 
+      const response = await get("/api/posts", {
+        limit: POSTS_PER_PAGE,
+        skip: page * POSTS_PER_PAGE,
       });
-      setPosts(prevPosts => page === 0 ? response.posts : [...prevPosts, ...response.posts]);
+      setPosts((prevPosts) => (page === 0 ? response.posts : [...prevPosts, ...response.posts]));
       setHasMore(response.hasMore);
     } catch (err) {
       console.error("Error loading posts:", err);
