@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { User, Trophy, LogOut, CircleHelp, MessageCircle, House } from "lucide-react";
+import { User, Trophy, LogOut, CircleHelp, MessageCircle, House, Crown } from "lucide-react";
 import { UserContext } from "../App";
 import logo from "../../public/icons/logo3.png";
 
@@ -34,6 +34,11 @@ const NavBar = () => {
             <NavLink to="/challenges" isActive={isActive("/challenges")}>
               <Trophy className="w-4 h-4" />
               <span>Challenges</span>
+            </NavLink>
+
+            <NavLink to="/leaderboard" isActive={isActive("/leaderboard")}>
+              <Crown className="w-4 h-4" />
+              <span>Leaderboard</span>
             </NavLink>
 
             <NavLink to="/howtoplay" isActive={isActive("/howtoplay")}>

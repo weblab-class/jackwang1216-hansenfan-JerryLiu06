@@ -13,6 +13,7 @@ import Challenges from "./pages/Challenges";
 import HowToPlay from "./pages/HowToPlay";
 import Chat from "./pages/Chat";
 import InitialQuestionnaire from "./pages/InitialQuestionnaire";
+import Leaderboard from "./pages/Leaderboard";
 
 export const UserContext = createContext(null);
 
@@ -103,6 +104,7 @@ const App = () => {
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/howtoplay" element={<HowToPlay />} />
             <Route path="/questionnaire" element={<InitialQuestionnaire />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         ) : (

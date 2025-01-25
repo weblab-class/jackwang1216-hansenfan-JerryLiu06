@@ -574,6 +574,20 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
   }
 });
 
+router.get("/leaderboard", async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select("name points")
+      .sort({ points: -1 })
+      .limit(50); // Show top 50 users
+
+    res.send(users);
+  } catch (err) {
+    console.error("Error fetching leaderboard:", err);
+    res.status(500).send({ error: "Failed to fetch leaderboard" });
+  }
+});
+
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
   console.log(`API route not found: ${req.method} ${req.url}`);
