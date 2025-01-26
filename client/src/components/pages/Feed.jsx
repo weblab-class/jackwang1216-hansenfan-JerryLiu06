@@ -289,19 +289,6 @@ const NewPostForm = ({ onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const generateChallenge = async () => {
-    setIsGenerating(true);
-    try {
-      const newChallenge = await get("/api/challenge/generate");
-      setChallenges(prev => [...prev, newChallenge]);
-    } catch (err) {
-      console.error("Error generating challenge:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   useEffect(() => {
     // Fetch user's active challenges when component mounts
@@ -375,19 +362,11 @@ const NewPostForm = ({ onSubmit }) => {
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={generateChallenge}
-                disabled={isGenerating}
-                className="px-5 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none whitespace-nowrap"
-              >
-                {isGenerating ? "Generating..." : "Generate Challenge"}
-              </button>
             </div>
             {!selectedChallenge && content.trim() && (
               <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
                 <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
-                Generate a challenge or select an existing one
+                Select a challenge to continue
               </p>
             )}
           </div>
