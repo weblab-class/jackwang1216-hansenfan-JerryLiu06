@@ -365,14 +365,17 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user.hasCompletedQuestionnaire) {
-      return res.status(400).send({ 
+      return res.status(400).send({
         error: "Please complete the initial questionnaire before generating challenges",
-        redirectTo: "/questionnaire"
+        redirectTo: "/questionnaire",
       });
     }
 
-    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", user.userProfile);
-    
+    const challenge = await generateChallenge(
+      req.body.difficulty || "Intermediate",
+      user.userProfile
+    );
+
     const newChallenge = new Challenge({
       title: challenge.title,
       description: challenge.description,
@@ -592,10 +595,7 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
 
 router.get("/leaderboard", async (req, res) => {
   try {
-    const users = await User.find({})
-      .select("name points")
-      .sort({ points: -1 })
-      .limit(50); // Show top 50 users
+    const users = await User.find({}).select("name points").sort({ points: -1 }).limit(50); // Show top 50 users
 
     res.send(users);
   } catch (err) {

@@ -15,7 +15,7 @@ const calculatePersonalizedPoints = (challenge, userProfile) => {
     performance: ["performanceComfort", "socialComfort"],
     physical: ["physicalActivity"],
     creative: ["creativity"],
-    public_speaking: ["publicSpeaking", "socialComfort"]
+    public_speaking: ["publicSpeaking", "socialComfort"],
   };
 
   // Default to medium difficulty if no profile exists
@@ -28,9 +28,10 @@ const calculatePersonalizedPoints = (challenge, userProfile) => {
   const relevantAttributes = challengeTypes[challengeType] || ["socialComfort"];
 
   // Calculate average skill level for relevant attributes
-  const skillLevel = relevantAttributes.reduce((sum, attr) => {
-    return sum + (userProfile[attr] || 3);
-  }, 0) / relevantAttributes.length;
+  const skillLevel =
+    relevantAttributes.reduce((sum, attr) => {
+      return sum + (userProfile[attr] || 3);
+    }, 0) / relevantAttributes.length;
 
   // Invert the skill level to get difficulty (1 = expert = easy, 5 = beginner = hard)
   const baseDifficulty = 6 - skillLevel;
