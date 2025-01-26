@@ -564,6 +564,108 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+// Get user profile data for any user
+router.get("/profile/:userId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    // Get user data
+    const user = await User.findById(req.params.userId).populate("friends").populate("friendRequests");
+    
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Get completed challenges
+    const completedChallenges = await Challenge.find({
+      creator: req.params.userId,
+      completed: true,
+    });
+
+    // Calculate current streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const recentCompletions = await Challenge.find({
+      creator: req.params.userId,
+      completed: true,
+      completedAt: { $exists: true },
+    }).sort({ completedAt: -1 });
+
+    let currentStreak = 0;
+    if (recentCompletions.length > 0) {
+      const lastCompletion = new Date(recentCompletions[0].completedAt);
+      lastCompletion.setHours(0, 0, 0, 0);
+
+      if (
+        lastCompletion.getTime() === today.getTime() ||
+        lastCompletion.getTime() === yesterday.getTime()
+      ) {
+        currentStreak = 1;
+        let checkDate = yesterday;
+
+        for (let i = 1; i < recentCompletions.length; i++) {
+          const completionDate = new Date(recentCompletions[i].completedAt);
+          completionDate.setHours(0, 0, 0, 0);
+
+          if (completionDate.getTime() === checkDate.getTime()) {
+            currentStreak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Get recent activity (completed challenges and posts)
+    const [recentChallenges, recentPosts] = await Promise.all([
+      Challenge.find({
+        creator: req.params.userId,
+        completed: true,
+      })
+        .sort({ completedAt: -1 })
+        .limit(5),
+      Post.find({
+        creator_id: req.params.userId,
+      })
+        .sort({ timestamp: -1 })
+        .limit(5),
+    ]);
+
+    // Combine and sort recent activity
+    const recentActivity = [
+      ...recentChallenges.map((challenge) => ({
+        type: "challenge",
+        description: `Completed challenge: ${challenge.title}`,
+        timestamp: challenge.completedAt,
+      })),
+      ...recentPosts.map((post) => ({
+        type: "post",
+        description: `Posted about challenge: ${post.challengeTitle}`,
+        timestamp: post.timestamp,
+      })),
+    ]
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 5);
+
+    // Calculate total points (XP)
+    const points = user.points || 0;
+
+    res.send({
+      points,
+      completedChallenges: completedChallenges.length,
+      currentStreak,
+      friends: user.friends,
+      friendRequests: user.friendRequests,
+      recentActivity,
+    });
+  } catch (err) {
+    console.error("Error fetching profile:", err);
+    res.status(500).send({ error: "Failed to fetch profile" });
+  }
+});
+
 router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -579,6 +681,24 @@ router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error saving user profile:", err);
     res.status(500).send({ error: "Failed to save user profile" });
+  }
+});
+
+// Get basic user information
+router.get("/user/:userId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+    res.send({
+      _id: user._id,
+      name: user.name,
+      points: user.points,
+    });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).send({ error: "Failed to fetch user" });
   }
 });
 

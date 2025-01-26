@@ -3,6 +3,7 @@ import { get } from "../../utilities";
 import { Trophy, Star, Users, Activity, Calendar, MessageCircle, Loader2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import { UserContext } from "../App.jsx";
+import { useParams } from "react-router-dom";
 
 const StatCard = ({ icon: Icon, title, value, loading }) => (
   <div className="relative group">
@@ -75,7 +76,8 @@ const LoadingSpinner = () => (
 );
 
 const Profile = () => {
-  const { user } = useContext(UserContext);
+  const { userId } = useParams();
+  const { user: currentUser } = useContext(UserContext);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({
     points: 0,
@@ -85,25 +87,34 @@ const Profile = () => {
     friendRequests: [],
     recentActivity: [],
   });
+  const [profileUser, setProfileUser] = useState(null);
 
   useEffect(() => {
     loadProfile();
     // Refresh data every minute
     const interval = setInterval(loadProfile, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userId]);
 
   const loadProfile = async () => {
     setLoading(true);
     try {
-      const profileData = await get("/api/profile");
+      const profileData = await get(userId ? `/api/profile/${userId}` : "/api/profile");
       setProfile(profileData);
+      if (userId) {
+        const userData = await get(`/api/user/${userId}`);
+        setProfileUser(userData);
+      } else {
+        setProfileUser(currentUser);
+      }
     } catch (err) {
       console.error("Failed to load profile:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  const user = profileUser || currentUser;
 
   return (
     <div className="min-h-screen pt-16 bg-[#0A0B0F]">

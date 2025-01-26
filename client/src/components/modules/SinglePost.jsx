@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./Card.css";
 
 const SinglePost = (props) => {
@@ -10,7 +11,12 @@ const SinglePost = (props) => {
     <>
       <div className="bg-gray-800 rounded-lg p-4 mb-4 shadow-lg border border-gray-700">
         <div className="flex justify-between items-start mb-2">
-          <h1 className="text-lg font-bold text-white">{props.creator_name}</h1>
+          <Link 
+            to={`/profile/${props.creator_id}`}
+            className="text-lg font-bold text-white hover:text-purple-400 transition-colors"
+          >
+            {props.creator_name}
+          </Link>
           <span className="text-sm text-gray-400">{timestamp}</span>
         </div>
         <div className="text-gray-300 mb-3">{props.content}</div>

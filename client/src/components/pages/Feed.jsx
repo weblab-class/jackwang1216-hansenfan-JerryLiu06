@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { get, post as apiPost } from "../../utilities";
+import { Link } from "react-router-dom";
 import {
   Image as ImageIcon,
   Heart,
@@ -128,11 +129,13 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
         <div className="bg-[#12141A] backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/30 group-hover:shadow-purple-500/10 transition-all duration-300">
           {/* Post Header */}
           <div className="p-4 flex items-center space-x-3 border-b border-white/10">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium">
+            <Link to={`/profile/${post.creator_id}`} className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-transform">
               {post.creator_name[0]}
-            </div>
+            </Link>
             <div>
-              <h3 className="font-medium text-white">{post.creator_name}</h3>
+              <Link to={`/profile/${post.creator_id}`} className="font-medium text-white hover:text-purple-400 transition-colors">
+                {post.creator_name}
+              </Link>
               <div className="flex items-center space-x-2 text-sm text-gray-400">
                 <Calendar className="w-4 h-4" />
                 <span>{formattedDate}</span>
