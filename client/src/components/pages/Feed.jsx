@@ -12,10 +12,81 @@ import {
 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
+const ChallengeModal = ({ challengeId, onClose }) => {
+  const [challenge, setChallenge] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      try {
+        const response = await get(`/api/challenge/${challengeId}`);
+        setChallenge(response);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching challenge:", err);
+        setError("Failed to load challenge details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (challengeId) {
+      setLoading(true);
+      setError(null);
+      fetchChallenge();
+    }
+  }, [challengeId]);
+
+  if (!challengeId) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="relative bg-[#12141A] rounded-xl p-6 max-w-lg w-full mx-4" onClick={e => e.stopPropagation()}>
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Hourglass className="w-6 h-6 text-purple-500 animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-red-400 text-center py-4 flex items-center justify-center space-x-2">
+            <X className="w-5 h-5" />
+            <span>Failed to load challenge details</span>
+          </div>
+        ) : challenge ? (
+          <>
+            <div className="flex items-center space-x-3 mb-4">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+              <h3 className="text-xl font-bold text-white">{challenge.title}</h3>
+            </div>
+            <p className="text-gray-300 mb-4">{challenge.description}</p>
+            <div className="flex items-center space-x-4 text-sm text-gray-400">
+              <div className="flex items-center space-x-1">
+                <span className="font-medium text-purple-400">{challenge.points} Points</span>
+                <span>•</span>
+                <span>{challenge.difficulty}</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-gray-400 text-center py-4">Challenge not found</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PostCard = ({ post, onLike, onComment, userId }) => {
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
   const formattedDate = new Date(post.timestamp).toLocaleDateString();
@@ -70,7 +141,8 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                     <span className="mx-1">•</span>
                     <Trophy className="w-4 h-4 text-yellow-500" />
                     <span
-                      className={`${post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"}`}
+                      className={`${post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"} cursor-pointer hover:underline`}
+                      onClick={() => post.challenge && setShowChallengeModal(true)}
                     >
                       {post.challengeTitle}
                       {post.isProgressUpdate && " (In Progress)"}
@@ -168,6 +240,12 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
       </div>
       {showImageModal && (
         <ImageModal imageUrl={post.imageUrl} onClose={() => setShowImageModal(false)} />
+      )}
+      {showChallengeModal && (
+        <ChallengeModal
+          challengeId={post.challenge}
+          onClose={() => setShowChallengeModal(false)}
+        />
       )}
     </>
   );

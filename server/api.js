@@ -447,6 +447,22 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+// Get challenge details
+router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error fetching challenge:", err);
+    res.status(500).send({ error: "Failed to fetch challenge" });
+  }
+});
+
 // Get user profile data
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {

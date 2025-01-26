@@ -35,7 +35,8 @@ const socketManager = require("./server-socket");
 
 // Server configuration below
 // TODO change connection URL after setting up your team database
-const mongoConnectionURL ="mongodb+srv://hansenfan14:0Q9qwQDW02j0IkEr@boldly.3xgzo.mongodb.net/?retryWrites=true&w=majority&appName=Boldly";
+const mongoConnectionURL =
+  "mongodb+srv://hansenfan14:0Q9qwQDW02j0IkEr@boldly.3xgzo.mongodb.net/?retryWrites=true&w=majority&appName=Boldly";
 // TODO change database name to the name you chose
 const databaseName = "Boldly";
 
@@ -69,8 +70,8 @@ app.use((req, res, next) => {
 });
 
 // allow us to process POST requests
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // set up a session, which will persist login data across requests
 app.use(
