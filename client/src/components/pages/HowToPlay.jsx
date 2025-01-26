@@ -40,7 +40,7 @@ const HowToPlay = () => {
       icon: Sparkles,
       title: "Level Up",
       description:
-        "Earn points, unlock achievements, and watch your confidence grow. The bolder your moves, the bigger your rewards.",
+        "Earn points and watch your confidence grow. The bolder your moves, the bigger your rewards.",
     },
   ];
 
