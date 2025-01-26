@@ -20,27 +20,27 @@ const HowToPlay = () => {
   const features = [
     {
       icon: Trophy,
-      title: "Take on Challenges",
+      title: "Generate & Choose Challenges",
       description:
-        "Push your boundaries with exciting challenges like talking to strangers or trying new activities. Each completed challenge earns you points based on difficulty.",
+        "Start by clicking 'Generate Challenge' to receive personalized challenges. Generate multiple times to get different options, then select the one you want to tackle from the dropdown menu.",
     },
     {
       icon: Users,
-      title: "Connect with Friends",
+      title: "Build Your Community",
       description:
-        "Build your network of fellow adventurers by connecting with others who share your daring spirit. Compete on the leaderboard to track your progress and see who's the ultimate daredevil in your circle.",
+        "Connect with other users by following them and engaging with their posts. Track your progress on the leaderboard and see how you stack up against friends in completing challenges.",
     },
     {
       icon: MessageCircle,
-      title: "Share Your Journey",
+      title: "Document Your Journey",
       description:
-        "Document your experiences through posts and photos. Get support and encouragement from your friends as you grow together.",
+        "After completing a challenge, create a post to share your experience. Add photos and describe how it went - your story might inspire others to step out of their comfort zone too!",
     },
     {
       icon: Sparkles,
-      title: "Level Up",
+      title: "Track Your Growth",
       description:
-        "Earn points and watch your confidence grow. The bolder your moves, the bigger your rewards.",
+        "Each completed challenge earns you points based on difficulty. Watch your confidence grow as you tackle harder challenges and climb the leaderboard rankings.",
     },
   ];
 

@@ -9,9 +9,11 @@ import {
   Calendar,
   Trophy,
   X,
-  Hourglass
+  Hourglass,
+  HelpCircle
 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
+import Tutorial from "../modules/Tutorial.jsx";
 
 const ChallengeModal = ({ challengeId, onClose }) => {
   const [challenge, setChallenge] = useState(null);
@@ -287,9 +289,22 @@ const NewPostForm = ({ onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateChallenge = async () => {
+    setIsGenerating(true);
+    try {
+      const newChallenge = await get("/api/challenge/generate");
+      setChallenges(prev => [...prev, newChallenge]);
+    } catch (err) {
+      console.error("Error generating challenge:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   useEffect(() => {
-    // Fetch all challenges when component mounts
+    // Fetch user's active challenges when component mounts
     const loadChallenges = async () => {
       try {
         const challenges = await get("/api/challenges");
@@ -346,23 +361,33 @@ const NewPostForm = ({ onSubmit }) => {
             rows="3"
           />
           <div className="space-y-3">
-            <select
-              value={selectedChallenge}
-              onChange={(e) => setSelectedChallenge(e.target.value)}
-              className="w-full px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
-              required
-            >
-              <option value="">Select a challenge</option>
-              {challenges.map((challenge) => (
-                <option key={challenge._id} value={challenge._id}>
-                  {challenge.title} {challenge.completed ? "✓" : "⌛️"}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-4">
+              <select
+                value={selectedChallenge}
+                onChange={(e) => setSelectedChallenge(e.target.value)}
+                className="flex-1 px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
+                required
+              >
+                <option value="">Select a challenge</option>
+                {challenges.map((challenge) => (
+                  <option key={challenge._id} value={challenge._id}>
+                    {challenge.title} {challenge.completed ? "✓" : "⌛️"}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={generateChallenge}
+                disabled={isGenerating}
+                className="px-5 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none whitespace-nowrap"
+              >
+                {isGenerating ? "Generating..." : "Generate Challenge"}
+              </button>
+            </div>
             {!selectedChallenge && content.trim() && (
               <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
                 <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
-                Please select a challenge for your post
+                Generate a challenge or select an existing one
               </p>
             )}
           </div>
@@ -538,6 +563,7 @@ const Feed = () => {
           )}
         </div>
       </div>
+      <Tutorial />
     </div>
   );
 };
