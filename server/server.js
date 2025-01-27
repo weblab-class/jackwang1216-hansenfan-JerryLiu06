@@ -35,8 +35,7 @@ const socketManager = require("./server-socket");
 
 // Server configuration below
 // TODO change connection URL after setting up your team database
-const mongoConnectionURL =
-  "mongodb+srv://hansenfan14:0Q9qwQDW02j0IkEr@boldly.3xgzo.mongodb.net/?retryWrites=true&w=majority&appName=Boldly";
+const mongoConnectionURL = process.env.MONGO_SRV;
 // TODO change database name to the name you chose
 const databaseName = "Boldly";
 
@@ -77,7 +76,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(
   session({
     // TODO: add a SESSION_SECRET string in your .env file, and replace the secret with process.env.SESSION_SECRET
-    secret: "session-secret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
   })
