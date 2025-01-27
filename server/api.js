@@ -467,14 +467,14 @@ router.post("/challenge/:challengeId/feedback", auth.ensureLoggedIn, async (req,
       enjoymentLevel: req.body.enjoymentLevel,
       productivityScore: req.body.productivityScore,
       timeSpent: req.body.timeSpent,
-      feedback: req.body.feedback
+      feedback: req.body.feedback,
     };
 
     // Remove any existing feedback from this user
     challenge.userRatings = challenge.userRatings.filter(
-      rating => !rating.user.equals(req.user._id)
+      (rating) => !rating.user.equals(req.user._id)
     );
-    
+
     challenge.userRatings.push(feedback);
 
     // Update aggregated metrics
@@ -496,16 +496,16 @@ router.get("/challenges/recommended", auth.ensureLoggedIn, async (req, res) => {
   try {
     // Get user's completed challenges with their feedback
     const userCompletedChallenges = await Challenge.find({
-      "userRatings.user": req.user._id
+      "userRatings.user": req.user._id,
     });
 
     // If user hasn't completed any challenges, return highest rated challenges
     if (userCompletedChallenges.length === 0) {
       const topChallenges = await Challenge.find({
-        completed: false
+        completed: false,
       })
-      .sort({ averageRating: -1 })
-      .limit(3);
+        .sort({ averageRating: -1 })
+        .limit(3);
       return res.send(topChallenges);
     }
 
@@ -514,11 +514,11 @@ router.get("/challenges/recommended", auth.ensureLoggedIn, async (req, res) => {
       preferredDifficulty: new Set(),
       highRatedChallenges: [],
       avgTimeSpent: 0,
-      totalFeedback: 0
+      totalFeedback: 0,
     };
 
-    userCompletedChallenges.forEach(challenge => {
-      const userRating = challenge.userRatings.find(r => r.user.equals(req.user._id));
+    userCompletedChallenges.forEach((challenge) => {
+      const userRating = challenge.userRatings.find((r) => r.user.equals(req.user._id));
       if (userRating) {
         userPreferences.preferredDifficulty.add(challenge.difficulty);
         if (userRating.rating >= 4) {
@@ -533,20 +533,20 @@ router.get("/challenges/recommended", auth.ensureLoggedIn, async (req, res) => {
 
     // Find challenges similar to ones the user enjoyed
     const recommendedChallenges = await Challenge.find({
-      _id: { $nin: userCompletedChallenges.map(c => c._id) },
+      _id: { $nin: userCompletedChallenges.map((c) => c._id) },
       difficulty: { $in: Array.from(userPreferences.preferredDifficulty) },
-      completed: false
+      completed: false,
     })
-    .sort({
-      averageRating: -1,
-      // Prefer challenges with similar time commitment
-      $expr: {
-        $abs: {
-          $subtract: ["$averageTimeSpent", userPreferences.avgTimeSpent]
-        }
-      }
-    })
-    .limit(3);
+      .sort({
+        averageRating: -1,
+        // Prefer challenges with similar time commitment
+        $expr: {
+          $abs: {
+            $subtract: ["$averageTimeSpent", userPreferences.avgTimeSpent],
+          },
+        },
+      })
+      .limit(3);
 
     res.send(recommendedChallenges);
   } catch (err) {
@@ -809,21 +809,24 @@ router.post("/admin/reset", async (req, res) => {
   try {
     // Clear all challenges
     await Challenge.deleteMany({});
-    
+
     // Reset all user scores and completed challenges
-    await User.updateMany({}, {
-      $set: {
-        points: 0,
-        completedChallenges: [],
-        userProfile: {
-          socialComfort: 3,
-          performanceComfort: 3,
-          physicalActivity: 3,
-          creativity: 3,
-          publicSpeaking: 3
-        }
+    await User.updateMany(
+      {},
+      {
+        $set: {
+          points: 0,
+          completedChallenges: [],
+          userProfile: {
+            socialComfort: 3,
+            performanceComfort: 3,
+            physicalActivity: 3,
+            creativity: 3,
+            publicSpeaking: 3,
+          },
+        },
       }
-    });
+    );
 
     res.send({ message: "Successfully reset all challenges and scores" });
   } catch (err) {

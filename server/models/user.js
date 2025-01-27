@@ -5,18 +5,18 @@ const UserSchema = new mongoose.Schema({
   googleid: String,
   points: {
     type: Number,
-    default: 0
+    default: 0,
   },
   userProfile: {
     socialComfort: Number,
     publicSpeaking: Number,
     physicalActivity: Number,
     creativity: Number,
-    performanceComfort: Number
+    performanceComfort: Number,
   },
   hasCompletedQuestionnaire: {
     type: Boolean,
-    default: false
+    default: false,
   },
   friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
   friendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
