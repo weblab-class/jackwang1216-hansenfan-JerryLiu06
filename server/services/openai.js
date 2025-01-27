@@ -15,7 +15,7 @@ const calculatePersonalizedPoints = (challenge, userPreferences) => {
 
   // Use average enjoyment level to gauge comfort (1-5 scale)
   const comfortLevel = userPreferences.avgEnjoyment;
-  
+
   // Invert the comfort level to get difficulty (1 = very enjoyable = easier, 5 = less enjoyable = harder)
   const baseDifficulty = 6 - comfortLevel;
 
@@ -43,8 +43,8 @@ const analyzeUserPreferences = async (userId) => {
       commonKeywords: new Map(),
       avgEnjoyment: 0,
       avgProductivity: 0,
-      userFeedbackSummary: [], 
-      feedbackThemes: new Map() 
+      userFeedbackSummary: [],
+      feedbackThemes: new Map()
     };
 
     userCompletedChallenges.forEach(challenge => {
@@ -86,7 +86,7 @@ const analyzeUserPreferences = async (userId) => {
         words.forEach(word => {
           if (word.length > 3) {
             preferences.commonKeywords.set(
-              word, 
+              word,
               (preferences.commonKeywords.get(word) || 0) + userRating.rating
             );
           }
@@ -114,8 +114,8 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
-    let systemPrompt = "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate.";
-    
+    let systemPrompt = "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate, make the duration of the challenge a week or less.";
+
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
 - Preferred difficulty levels: ${Array.from(userPreferences.preferredDifficulty).join(', ')}
@@ -127,7 +127,7 @@ Examples of challenges they enjoyed:
 ${userPreferences.highlyRatedDescriptions.slice(0, 2).map(desc => "- " + desc).join('\n')}
 
 Their feedback on favorite challenges:
-${userPreferences.userFeedbackSummary.slice(0, 2).map(fb => 
+${userPreferences.userFeedbackSummary.slice(0, 2).map(fb =>
   `- ${fb.challenge}: "${fb.feedback}"`
 ).join('\n')}
 
