@@ -363,32 +363,19 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
 
 router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    if (!user.hasCompletedQuestionnaire) {
-      return res.status(400).send({
-        error: "Please complete the initial questionnaire before generating challenges",
-        redirectTo: "/questionnaire",
-      });
-    }
-
-    const challenge = await generateChallenge(
-      req.body.difficulty || "Intermediate",
-      user.userProfile
-    );
-
+    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", req.user._id);
     const newChallenge = new Challenge({
       title: challenge.title,
       description: challenge.description,
+      difficulty: challenge.difficulty,
       points: challenge.points,
-      difficulty: req.body.difficulty || "Intermediate",
       creator: req.user._id,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
     await newChallenge.save();
     res.send(newChallenge);
   } catch (err) {
-    console.error("Error generating challenge:", err);
+    console.log(err);
     res.status(500).send({ error: "Failed to generate challenge" });
   }
 });
@@ -454,7 +441,7 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
 router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
   try {
     const challenge = await Challenge.findById(req.params.challengeId);
-    
+
     if (!challenge) {
       return res.status(404).send({ error: "Challenge not found" });
     }
@@ -463,6 +450,108 @@ router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error fetching challenge:", err);
     res.status(500).send({ error: "Failed to fetch challenge" });
+  }
+});
+
+// Submit feedback for a challenge
+router.post("/challenge/:challengeId/feedback", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    const feedback = {
+      user: req.user._id,
+      rating: req.body.rating,
+      enjoymentLevel: req.body.enjoymentLevel,
+      productivityScore: req.body.productivityScore,
+      timeSpent: req.body.timeSpent,
+      feedback: req.body.feedback
+    };
+
+    // Remove any existing feedback from this user
+    challenge.userRatings = challenge.userRatings.filter(
+      rating => !rating.user.equals(req.user._id)
+    );
+    
+    challenge.userRatings.push(feedback);
+
+    // Update aggregated metrics
+    const ratings = challenge.userRatings;
+    challenge.averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+    challenge.averageTimeSpent = ratings.reduce((sum, r) => sum + r.timeSpent, 0) / ratings.length;
+    challenge.totalAttempts = ratings.length;
+
+    await challenge.save();
+    res.send(challenge);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Error submitting feedback" });
+  }
+});
+
+// Get personalized challenge recommendations
+router.get("/challenges/recommended", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    // Get user's completed challenges with their feedback
+    const userCompletedChallenges = await Challenge.find({
+      "userRatings.user": req.user._id
+    });
+
+    // If user hasn't completed any challenges, return highest rated challenges
+    if (userCompletedChallenges.length === 0) {
+      const topChallenges = await Challenge.find({
+        completed: false
+      })
+      .sort({ averageRating: -1 })
+      .limit(3);
+      return res.send(topChallenges);
+    }
+
+    // Analyze user preferences
+    const userPreferences = {
+      preferredDifficulty: new Set(),
+      highRatedChallenges: [],
+      avgTimeSpent: 0,
+      totalFeedback: 0
+    };
+
+    userCompletedChallenges.forEach(challenge => {
+      const userRating = challenge.userRatings.find(r => r.user.equals(req.user._id));
+      if (userRating) {
+        userPreferences.preferredDifficulty.add(challenge.difficulty);
+        if (userRating.rating >= 4) {
+          userPreferences.highRatedChallenges.push(challenge);
+        }
+        userPreferences.avgTimeSpent += userRating.timeSpent;
+        userPreferences.totalFeedback++;
+      }
+    });
+
+    userPreferences.avgTimeSpent /= userPreferences.totalFeedback;
+
+    // Find challenges similar to ones the user enjoyed
+    const recommendedChallenges = await Challenge.find({
+      _id: { $nin: userCompletedChallenges.map(c => c._id) },
+      difficulty: { $in: Array.from(userPreferences.preferredDifficulty) },
+      completed: false
+    })
+    .sort({
+      averageRating: -1,
+      // Prefer challenges with similar time commitment
+      $expr: {
+        $abs: {
+          $subtract: ["$averageTimeSpent", userPreferences.avgTimeSpent]
+        }
+      }
+    })
+    .limit(3);
+
+    res.send(recommendedChallenges);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Error getting recommendations" });
   }
 });
 
@@ -568,8 +657,10 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
 router.get("/profile/:userId", auth.ensureLoggedIn, async (req, res) => {
   try {
     // Get user data
-    const user = await User.findById(req.params.userId).populate("friends").populate("friendRequests");
-    
+    const user = await User.findById(req.params.userId)
+      .populate("friends")
+      .populate("friendRequests");
+
     if (!user) {
       return res.status(404).send({ error: "User not found" });
     }
@@ -710,6 +801,34 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
   } catch (err) {
     console.error("Error deleting challenges:", err);
     res.status(500).send({ error: "Failed to delete challenges" });
+  }
+});
+
+// Reset all challenges and scores (development only)
+router.post("/admin/reset", async (req, res) => {
+  try {
+    // Clear all challenges
+    await Challenge.deleteMany({});
+    
+    // Reset all user scores and completed challenges
+    await User.updateMany({}, {
+      $set: {
+        points: 0,
+        completedChallenges: [],
+        userProfile: {
+          socialComfort: 3,
+          performanceComfort: 3,
+          physicalActivity: 3,
+          creativity: 3,
+          publicSpeaking: 3
+        }
+      }
+    });
+
+    res.send({ message: "Successfully reset all challenges and scores" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ error: "Failed to reset data" });
   }
 });
 
