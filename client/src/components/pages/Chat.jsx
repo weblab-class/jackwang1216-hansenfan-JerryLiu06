@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { get, post } from "../../utilities";
-import { Search, Send, UserPlus, Check, X, Menu, Users } from "lucide-react";
+import { Search, Send, UserPlus, Check, X, Menu, Users, Trophy, BarChart2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import { socket } from "../../client-socket";
 import { UserContext } from "../App";
@@ -135,6 +135,160 @@ const Chat = () => {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const ChallengeModal = ({ challenge, onClose, onAccept, onReject }) => {
+    const [loading, setLoading] = useState(false);
+
+    const handleAction = async (action) => {
+      setLoading(true);
+      try {
+        await action();
+        onClose();
+      } catch (err) {
+        console.error("Error handling challenge:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-[#12141A] rounded-xl p-6 max-w-lg w-full mx-4">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-white">Challenge Details</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
+              <p className="text-gray-400 mt-2">{challenge.description}</p>
+            </div>
+
+            <div className="flex items-center gap-4 text-sm text-gray-400">
+              <div className="flex items-center gap-1">
+                <Trophy className="w-4 h-4" />
+                <span>{challenge.points} points</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <BarChart2 className="w-4 h-4" />
+                <span>{challenge.difficulty}</span>
+              </div>
+            </div>
+
+            {challenge.status === "pending" && (
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => handleAction(onReject)}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Decline Challenge
+                </button>
+                <button
+                  onClick={() => handleAction(onAccept)}
+                  disabled={loading}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
+                >
+                  Accept Challenge
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const MessageBubble = ({ message, isOwnMessage }) => {
+    const [showChallengeModal, setShowChallengeModal] = useState(false);
+    const bubbleClass = isOwnMessage
+      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white ml-auto"
+      : "bg-white/5 text-white";
+
+    const handleAcceptChallenge = async () => {
+      await post(`/api/challenges/${message.challenge._id}/status`, { status: "accepted" });
+    };
+
+    const handleRejectChallenge = async () => {
+      await post(`/api/challenges/${message.challenge._id}/status`, { status: "declined" });
+    };
+
+    if (message.type === "challenge" && message.challenge) {
+      const isPending = message.challenge.status === "pending";
+      const isRecipient = !isOwnMessage;
+
+      return (
+        <>
+          <div className={`rounded-lg p-4 max-w-[80%] mb-2 ${bubbleClass}`}>
+            <div className="flex flex-col">
+              <span className="text-sm opacity-75 mb-1">
+                {isOwnMessage ? "Challenge Sent:" : "Challenge Received:"}
+              </span>
+              <div className="bg-black/20 rounded p-3">
+                <h4 className="font-semibold mb-1">{message.challenge.title}</h4>
+                <p className="text-sm opacity-75 line-clamp-2">{message.challenge.description}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-sm">
+                    {message.challenge.points} points • {message.challenge.difficulty}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {isPending && isRecipient ? (
+                      <>
+                        <button
+                          onClick={() => handleRejectChallenge()}
+                          className="text-sm px-3 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors"
+                        >
+                          Decline
+                        </button>
+                        <button
+                          onClick={() => handleAcceptChallenge()}
+                          className="text-sm px-3 py-1 rounded bg-purple-500 hover:bg-purple-600 transition-colors"
+                        >
+                          Accept
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setShowChallengeModal(true)}
+                        className="text-sm px-3 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        View Details
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {!isPending && (
+                  <div className="mt-2 text-sm">
+                    Status: <span className="capitalize">{message.challenge.status}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          {showChallengeModal && (
+            <ChallengeModal
+              challenge={message.challenge}
+              onClose={() => setShowChallengeModal(false)}
+              onAccept={handleAcceptChallenge}
+              onReject={handleRejectChallenge}
+            />
+          )}
+        </>
+      );
+    }
+
+    return (
+      <div className={`rounded-lg p-4 max-w-[80%] mb-2 ${bubbleClass}`}>
+        <p>{message.content}</p>
+        <span className="text-xs opacity-50 mt-1 block">
+          {new Date(message.timestamp).toLocaleTimeString()}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -312,28 +466,7 @@ const Chat = () => {
                 <div className="flex-1 overflow-y-auto min-h-0 bg-gradient-to-b from-[#12141A] to-[#0A0B0F]">
                   <div className="p-4 space-y-4">
                     {messages.map((message) => (
-                      <div
-                        key={message._id}
-                        className={`flex ${
-                          message.sender._id === user._id ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <div
-                          className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-2.5 ${
-                            message.sender._id === user._id
-                              ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20"
-                              : "bg-white/5 text-gray-200 shadow-lg shadow-white/5"
-                          }`}
-                        >
-                          <p className="leading-relaxed break-words">{message.content}</p>
-                          <p className="text-xs opacity-75 mt-1.5">
-                            {new Date(message.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
-                      </div>
+                      <MessageBubble key={message._id} message={message} isOwnMessage={message.sender._id === user._id} />
                     ))}
                     <div ref={messagesEndRef} />
                   </div>

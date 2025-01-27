@@ -19,6 +19,15 @@ const MessageSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  type: {
+    type: String,
+    enum: ["text", "challenge"],
+    default: "text"
+  },
+  challenge: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Challenge"
+  }
 });
 
 module.exports = mongoose.model("message", MessageSchema);

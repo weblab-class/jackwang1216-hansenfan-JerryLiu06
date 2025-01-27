@@ -12,72 +12,85 @@ const ChallengeSchema = new mongoose.Schema({
     type: Number,
     min: 1,
     max: 10,
-    required: true,
+    default: 5,
   },
-  deadline: Date,
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
+  recipients: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user"
+    },
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "declined", "completed"],
+      default: "pending"
+    },
+    acceptedAt: Date,
+    completedAt: Date
+  }],
   completed: {
     type: Boolean,
     default: false,
   },
-  completedAt: {
-    type: Date,
-    default: null,
-  },
+  deadline: Date,
   createdAt: {
     type: Date,
     default: Date.now,
   },
   // Feedback fields
-  userRatings: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user"
+  userRatings: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+      rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      enjoymentLevel: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      productivityScore: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      timeSpent: {
+        type: Number, // in minutes
+        min: 0,
+      },
+      feedback: String,
+      submittedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
+  ],
+  tags: [
+    {
+      type: String,
     },
-    enjoymentLevel: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    productivityScore: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    timeSpent: {
-      type: Number,  // in minutes
-      min: 0
-    },
-    feedback: String,
-    submittedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  tags: [{
-    type: String
-  }],
+  ],
   // Aggregated metrics
   averageRating: {
     type: Number,
-    default: 0
+    default: 0,
   },
   averageTimeSpent: {
     type: Number,
-    default: 0
+    default: 0,
   },
   totalAttempts: {
     type: Number,
-    default: 0
-  }
+    default: 0,
+  },
 });
 
 module.exports = mongoose.model("Challenge", ChallengeSchema);

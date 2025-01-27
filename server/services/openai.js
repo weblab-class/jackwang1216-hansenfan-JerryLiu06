@@ -2,12 +2,22 @@ const { OpenAI } = require("openai");
 require("dotenv").config();
 const Challenge = require("../models/challenge");
 
+let openai = null;
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    console.log("OpenAI API Key: Present and configured");
+  } else {
+    console.log("OpenAI API Key: Not configured");
+  }
+} catch (err) {
+  console.log("OpenAI API Key: Error configuring", err);
+}
+
 // Add debugging logs
 console.log("OpenAI API Key:", "Present");
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 const calculatePersonalizedPoints = (challenge, userPreferences) => {
   // Default to medium difficulty if no preferences exist
@@ -28,7 +38,7 @@ const calculatePersonalizedPoints = (challenge, userPreferences) => {
 const analyzeUserPreferences = async (userId) => {
   try {
     const userCompletedChallenges = await Challenge.find({
-      "userRatings.user": userId
+      "userRatings.user": userId,
     });
 
     if (userCompletedChallenges.length === 0) {
@@ -44,11 +54,11 @@ const analyzeUserPreferences = async (userId) => {
       avgEnjoyment: 0,
       avgProductivity: 0,
       userFeedbackSummary: [],
-      feedbackThemes: new Map()
+      feedbackThemes: new Map(),
     };
 
-    userCompletedChallenges.forEach(challenge => {
-      const userRating = challenge.userRatings.find(r => r.user.equals(userId));
+    userCompletedChallenges.forEach((challenge) => {
+      const userRating = challenge.userRatings.find((r) => r.user.equals(userId));
       if (userRating) {
         preferences.preferredDifficulty.add(challenge.difficulty);
         preferences.avgTimeSpent += userRating.timeSpent;
@@ -63,7 +73,7 @@ const analyzeUserPreferences = async (userId) => {
             preferences.userFeedbackSummary.push({
               challenge: challenge.title,
               feedback: userRating.feedback,
-              rating: userRating.rating
+              rating: userRating.rating,
             });
           }
         }
@@ -71,7 +81,7 @@ const analyzeUserPreferences = async (userId) => {
         // Analyze text feedback for themes
         if (userRating.feedback) {
           const words = userRating.feedback.toLowerCase().split(/\W+/);
-          words.forEach(word => {
+          words.forEach((word) => {
             if (word.length > 3) {
               preferences.feedbackThemes.set(
                 word,
@@ -83,7 +93,7 @@ const analyzeUserPreferences = async (userId) => {
 
         // Extract and count keywords from challenge descriptions
         const words = challenge.description.toLowerCase().split(/\W+/);
-        words.forEach(word => {
+        words.forEach((word) => {
           if (word.length > 3) {
             preferences.commonKeywords.set(
               word,
@@ -109,41 +119,50 @@ const analyzeUserPreferences = async (userId) => {
 };
 
 const generateChallenge = async (difficulty = "Intermediate", userId = null) => {
+  if (!openai) {
+    throw new Error("OpenAI API key not configured");
+  }
+  
   try {
     console.log("Generating challenge with difficulty:", difficulty);
 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
-    let systemPrompt = "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate, make the duration of the challenge a week or less.";
+    let systemPrompt =
+      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate, make the duration of the challenge a week or less.";
 
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
-- Preferred difficulty levels: ${Array.from(userPreferences.preferredDifficulty).join(', ')}
+- Preferred difficulty levels: ${Array.from(userPreferences.preferredDifficulty).join(", ")}
 - Average time spent on challenges: ${Math.round(userPreferences.avgTimeSpent)} minutes
 - Average enjoyment level: ${userPreferences.avgEnjoyment.toFixed(1)}/5
 - Average productivity score: ${userPreferences.avgProductivity.toFixed(1)}/5
 
 Examples of challenges they enjoyed:
-${userPreferences.highlyRatedDescriptions.slice(0, 2).map(desc => "- " + desc).join('\n')}
+${userPreferences.highlyRatedDescriptions
+  .slice(0, 2)
+  .map((desc) => "- " + desc)
+  .join("\n")}
 
 Their feedback on favorite challenges:
-${userPreferences.userFeedbackSummary.slice(0, 2).map(fb =>
-  `- ${fb.challenge}: "${fb.feedback}"`
-).join('\n')}
+${userPreferences.userFeedbackSummary
+  .slice(0, 2)
+  .map((fb) => `- ${fb.challenge}: "${fb.feedback}"`)
+  .join("\n")}
 
 Common themes from their feedback:
 ${Array.from(userPreferences.feedbackThemes.entries())
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5)
   .map(([word, score]) => word)
-  .join(', ')}
+  .join(", ")}
 
 Popular themes in their highly-rated challenges:
 ${Array.from(userPreferences.commonKeywords.entries())
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5)
   .map(([word, score]) => word)
-  .join(', ')}`;
+  .join(", ")}`;
     }
 
     const completion = await openai.chat.completions.create({
@@ -151,7 +170,7 @@ ${Array.from(userPreferences.commonKeywords.entries())
       messages: [
         {
           role: "system",
-          content: systemPrompt
+          content: systemPrompt,
         },
         {
           role: "user",
@@ -174,7 +193,7 @@ ${Array.from(userPreferences.commonKeywords.entries())
       throw new Error("Failed to parse challenge response");
     }
   } catch (err) {
-    console.log("Error generating challenge:", err);
+    console.error("Error generating challenge:", err);
     throw err;
   }
 };

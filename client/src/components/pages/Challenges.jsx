@@ -1,94 +1,144 @@
 import React, { useState, useEffect } from "react";
 import { get, post } from "../../utilities";
-import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X } from "lucide-react";
+import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X, Share2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 
-const ChallengeCard = ({ challenge, onComplete }) => {
+const ChallengeCard = ({ challenge, onComplete, onShare }) => {
   return (
     <div className="relative group h-full">
       <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
-      <div
-        className={`relative bg-[#12141A] rounded-xl border border-white/10 p-6 h-full min-h-[320px] flex flex-col ${
-          challenge.completed ? "opacity-75" : ""
-        }`}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center">
-            <Trophy className="w-6 h-6 text-purple-400" />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Star className="w-5 h-5 text-yellow-400" />
-            <span className="text-white font-medium">{challenge.points} Points</span>
-          </div>
-        </div>
-
+      <div className="relative h-full bg-[#1C1F26] rounded-xl p-6 flex flex-col">
         <div className="flex-1">
-          <h3 className="text-xl font-bold text-white mb-4">{challenge.title}</h3>
-          <p className="text-gray-400">{challenge.description}</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
+            <span className="text-sm px-2 py-1 bg-white/5 rounded-lg text-white">
+              {challenge.difficulty}
+            </span>
+          </div>
+
+          <p className="text-gray-400 mb-4">{challenge.description}</p>
+
+          <div className="flex items-center space-x-4 text-sm text-gray-400">
+            <div className="flex items-center">
+              <Trophy className="w-4 h-4 mr-1" />
+              <span>{challenge.points} pts</span>
+            </div>
+            {challenge.deadline && (
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-6">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end space-x-2">
+            <button
+              onClick={() => onShare(challenge)}
+              className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-white/5 text-white hover:bg-white/10 transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share</span>
+            </button>
             <button
               onClick={() => onComplete(challenge)}
               disabled={challenge.completed}
-              className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
-                challenge.completed
-                  ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
-              }`}
+              className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{challenge.completed ? "Completed" : "Complete"}</span>
             </button>
           </div>
-
-          {challenge.completed && challenge.completedAt && (
-            <div className="mt-4 text-sm text-gray-400">
-              Completed on {new Date(challenge.completedAt).toLocaleDateString()}
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 };
 
-const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
-  if (!challenge) return null;
+const ShareChallengeModal = ({ challenge, onClose }) => {
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Get user's friends
+    get("/api/profile").then((user) => {
+      setFriends(user.friends || []);
+    });
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await post(`/api/challenges/${challenge._id}/share`, {
+        recipientIds: selectedUsers
+      });
+      
+      onClose();
+    } catch (err) {
+      console.error("Error sharing challenge:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#12141A] rounded-xl border border-white/10 p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-start mb-4">
-          <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-purple-400" />
-          </div>
+      <div className="bg-[#12141A] rounded-xl p-6 max-w-lg w-full mx-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white">Share Challenge</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <h3 className="text-xl font-bold text-white mb-2">New Challenge Generated!</h3>
-        <div className="mb-4">
-          <h4 className="text-lg font-semibold text-white mb-1">{challenge.title}</h4>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-white mb-2">{challenge.title}</h3>
           <p className="text-gray-400">{challenge.description}</p>
         </div>
 
-        <div className="flex items-center justify-between mt-6">
-          <button
-            onClick={onReject}
-            className="px-4 py-2 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors"
-          >
-            Reject
-          </button>
-          <button
-            onClick={onAccept}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
-          >
-            Accept Challenge
-          </button>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Share with Friends</label>
+            <div className="space-y-2">
+              {friends.length === 0 ? (
+                <p className="text-gray-400">No friends found. Add some friends to share challenges!</p>
+              ) : (
+                <select
+                  multiple
+                  value={selectedUsers}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setSelectedUsers(selected);
+                  }}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  size={Math.min(friends.length, 5)}
+                >
+                  {friends.map((friend) => (
+                    <option key={friend._id} value={friend._id} className="py-2">
+                      {friend.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-sm text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple friends</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <button
+              type="submit"
+              disabled={loading || selectedUsers.length === 0}
+              className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg flex items-center space-x-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>{loading ? "Sharing..." : "Share Challenge"}</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -110,6 +160,7 @@ const Challenges = ({ userId }) => {
     feedback: "",
   });
   const [recommendedChallenges, setRecommendedChallenges] = useState([]);
+  const [shareChallengeModal, setShareChallengeModal] = useState(null);
 
   useEffect(() => {
     loadChallenges();
@@ -195,6 +246,14 @@ const Challenges = ({ userId }) => {
       console.log(err);
       setError("Failed to submit feedback");
     }
+  };
+
+  const handleShareChallenge = (challenge) => {
+    setShareChallengeModal(challenge);
+  };
+
+  const handleCloseShareChallengeModal = () => {
+    setShareChallengeModal(null);
   };
 
   return (
@@ -298,6 +357,7 @@ const Challenges = ({ userId }) => {
                 key={challenge._id}
                 challenge={challenge}
                 onComplete={handleComplete}
+                onShare={handleShareChallenge}
               />
             ))}
         </div>
@@ -381,7 +441,7 @@ const Challenges = ({ userId }) => {
                   placeholder="Share your thoughts..."
                 />
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-end pt-4">
                 <button
                   className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
                   onClick={() => {
@@ -401,6 +461,13 @@ const Challenges = ({ userId }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {shareChallengeModal && (
+        <ShareChallengeModal
+          challenge={shareChallengeModal}
+          onClose={handleCloseShareChallengeModal}
+        />
       )}
     </div>
   );

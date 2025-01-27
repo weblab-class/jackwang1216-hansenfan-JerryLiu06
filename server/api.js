@@ -313,7 +313,8 @@ router.get("/messages/:userId", auth.ensureLoggedIn, async (req, res) => {
     })
       .sort({ timestamp: 1 })
       .populate("sender")
-      .populate("recipient");
+      .populate("recipient")
+      .populate("challenge");
 
     res.send(messages);
   } catch (err) {
@@ -843,6 +844,147 @@ router.get("/leaderboard", async (req, res) => {
   } catch (err) {
     console.error("Error fetching leaderboard:", err);
     res.status(500).send({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+// Share an existing challenge with users
+router.post("/challenges/:challengeId/share", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const { recipientIds } = req.body;
+    
+    if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).send({ error: "Must specify at least one recipient" });
+    }
+
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Create a new challenge based on the existing one
+    const sharedChallenge = new Challenge({
+      title: challenge.title,
+      description: challenge.description,
+      difficulty: challenge.difficulty,
+      points: challenge.points,
+      deadline: challenge.deadline,
+      creator: req.user._id,
+      recipients: recipientIds.map(userId => ({
+        user: userId,
+        status: "pending"
+      }))
+    });
+
+    await sharedChallenge.save();
+    await sharedChallenge.populate("recipients.user creator");
+    
+    // Create messages for each recipient
+    const messages = await Promise.all(recipientIds.map(async (recipientId) => {
+      const message = new Message({
+        sender: req.user._id,
+        recipient: recipientId,
+        content: `Shared challenge: ${sharedChallenge.title}`,
+        type: "challenge",
+        challenge: sharedChallenge._id
+      });
+      await message.save();
+      return message;
+    }));
+
+    // Notify recipients via socket
+    sharedChallenge.recipients.forEach((recipient, index) => {
+      const socket = socketManager.getSocketFromUserID(recipient.user._id);
+      if (socket) {
+        socket.emit("challenge", {
+          type: "new",
+          challenge: sharedChallenge
+        });
+        socket.emit("message", messages[index]);
+      }
+    });
+
+    res.send(sharedChallenge);
+  } catch (err) {
+    console.error("Error sharing challenge:", err);
+    res.status(500).send({ error: "Error sharing challenge" });
+  }
+});
+
+// Get challenges sent to me
+router.get("/challenges/received", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      "recipients.user": req.user._id
+    })
+    .populate("creator")
+    .populate("recipients.user");
+    
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting received challenges:", err);
+    res.status(500).send({ error: "Error getting received challenges" });
+  }
+});
+
+// Get challenges I've sent
+router.get("/challenges/sent", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      creator: req.user._id
+    })
+    .populate("creator")
+    .populate("recipients.user");
+    
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting sent challenges:", err);
+    res.status(500).send({ error: "Error getting sent challenges" });
+  }
+});
+
+router.post("/challenges/:challengeId/status", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["accepted", "declined", "completed"].includes(status)) {
+      return res.status(400).send({ error: "Invalid status" });
+    }
+
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Find the recipient entry for the current user
+    const recipientEntry = challenge.recipients.find(
+      r => r.user.toString() === req.user._id.toString()
+    );
+
+    if (!recipientEntry) {
+      return res.status(403).send({ error: "Not authorized to update this challenge" });
+    }
+
+    // Update the status
+    recipientEntry.status = status;
+    await challenge.save();
+
+    // Populate the challenge data
+    await challenge.populate("recipients.user creator");
+
+    // Notify the challenge creator
+    const creatorSocket = socketManager.getSocketFromUserID(challenge.creator._id);
+    if (creatorSocket) {
+      creatorSocket.emit("challenge", {
+        type: "status_update",
+        challenge: challenge,
+        updatedBy: req.user._id,
+        newStatus: status
+      });
+    }
+
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error updating challenge status:", err);
+    res.status(500).send({ error: "Failed to update challenge status" });
   }
 });
 
