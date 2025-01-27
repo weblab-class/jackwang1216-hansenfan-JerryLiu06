@@ -5,10 +5,10 @@ import NavBar from "../modules/NavBar.jsx";
 
 const ChallengeCard = ({ challenge, onComplete }) => {
   return (
-    <div className="relative group">
+    <div className="relative group h-full">
       <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
       <div
-        className={`relative bg-[#12141A] rounded-xl border border-white/10 p-6 ${
+        className={`relative bg-[#12141A] rounded-xl border border-white/10 p-6 h-full min-h-[320px] flex flex-col ${
           challenge.completed ? "opacity-75" : ""
         }`}
       >
@@ -22,29 +22,33 @@ const ChallengeCard = ({ challenge, onComplete }) => {
           </div>
         </div>
 
-        <h3 className="text-xl font-bold text-white mb-2">{challenge.title}</h3>
-        <p className="text-gray-400 mb-6">{challenge.description}</p>
-
-        <div className="flex items-center justify-end">
-          <button
-            onClick={() => onComplete(challenge)}
-            disabled={challenge.completed}
-            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
-              challenge.completed
-                ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{challenge.completed ? "Completed" : "Complete"}</span>
-          </button>
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-white mb-4">{challenge.title}</h3>
+          <p className="text-gray-400">{challenge.description}</p>
         </div>
 
-        {challenge.completed && challenge.completedAt && (
-          <div className="mt-4 text-sm text-gray-400">
-            Completed on {new Date(challenge.completedAt).toLocaleDateString()}
+        <div className="mt-6">
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => onComplete(challenge)}
+              disabled={challenge.completed}
+              className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+                challenge.completed
+                  ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90"
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{challenge.completed ? "Completed" : "Complete"}</span>
+            </button>
           </div>
-        )}
+
+          {challenge.completed && challenge.completedAt && (
+            <div className="mt-4 text-sm text-gray-400">
+              Completed on {new Date(challenge.completedAt).toLocaleDateString()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
