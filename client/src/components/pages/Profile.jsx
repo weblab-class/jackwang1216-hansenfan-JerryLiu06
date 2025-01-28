@@ -4,7 +4,6 @@ import { Trophy, Star, Users, Activity, Calendar, MessageCircle, Loader2 } from 
 import NavBar from "../modules/NavBar.jsx";
 import { UserContext } from "../App.jsx";
 import { useParams } from "react-router-dom";
-import LoadingSpinner from "../modules/LoadingSpinner.jsx";
 
 const StatCard = ({ icon: Icon, title, value, loading }) => (
   <div className="relative group">
@@ -115,39 +114,36 @@ const Profile = () => {
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
-          <div className="space-y-8">
-            <LoadingSpinner />
-            <div className="animate-pulse space-y-8">
-              {/* Profile Header Skeleton */}
-              <div className="flex flex-col items-center">
-                <div className="w-24 h-24 rounded-full bg-white/5"></div>
-                <div className="h-8 w-48 bg-white/5 rounded mt-4"></div>
-                <div className="h-4 w-32 bg-white/5 rounded mt-2"></div>
-              </div>
+          <div className="animate-pulse space-y-8">
+            {/* Profile Header Skeleton */}
+            <div className="flex flex-col items-center">
+              <div className="w-24 h-24 rounded-full bg-white/5"></div>
+              <div className="h-8 w-48 bg-white/5 rounded mt-4"></div>
+              <div className="h-4 w-32 bg-white/5 rounded mt-2"></div>
+            </div>
 
-              {/* Stats Grid Skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="bg-[#12141A] rounded-xl border border-white/10 p-6">
-                    <div className="h-12 w-full bg-white/5 rounded"></div>
+            {/* Stats Grid Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-[#12141A] rounded-xl border border-white/10 p-6">
+                  <div className="h-12 w-full bg-white/5 rounded"></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Activity Skeleton */}
+            <div className="bg-[#12141A] rounded-xl border border-white/10 p-6">
+              <div className="h-6 w-48 bg-white/5 rounded mb-6"></div>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
+                    <div className="w-10 h-10 rounded-lg bg-white/10"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-white/10 rounded w-1/4"></div>
+                    </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Activity Skeleton */}
-              <div className="bg-[#12141A] rounded-xl border border-white/10 p-6">
-                <div className="h-6 w-48 bg-white/5 rounded mb-6"></div>
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg">
-                      <div className="w-10 h-10 rounded-lg bg-white/10"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-white/10 rounded w-1/4"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
