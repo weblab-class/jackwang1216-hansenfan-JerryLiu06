@@ -45,39 +45,43 @@ const Tutorial = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-colors"
-        aria-label="Open Tutorial"
+        className="fixed bottom-4 right-4 z-50 p-2 rounded-full shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 transition-opacity"
       >
-        <HelpCircle className="w-6 h-6" />
+        <HelpCircle className="w-6 h-6 text-white" />
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 rounded-xl max-w-md w-full p-6 relative">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#12141A] rounded-xl max-w-lg w-full relative">
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-6">How to Use Boldly</h2>
+            <div className="p-6 space-y-8">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">How to Use Boldly</h2>
+                <div className="w-12 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" />
+              </div>
 
-            <div className="space-y-6">
-              {steps.map((step, index) => (
-                <div key={index} className="border-l-2 border-purple-500 pl-4">
-                  <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-                  <p className="text-gray-400">{step.content}</p>
-                </div>
-              ))}
+              <div className="space-y-6">
+                {steps.map((step, index) => (
+                  <div key={index}>
+                    <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
+                    <p className="text-gray-400">{step.content}</p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={handleClose}
+                className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                Got it!
+              </button>
             </div>
-
-            <button
-              onClick={handleClose}
-              className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg py-2 transition-colors"
-            >
-              Got it!
-            </button>
           </div>
         </div>
       )}

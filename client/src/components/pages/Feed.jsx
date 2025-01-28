@@ -10,7 +10,7 @@ import {
   Trophy,
   X,
   Hourglass,
-  HelpCircle
+  HelpCircle,
 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import Tutorial from "../modules/Tutorial.jsx";
@@ -45,12 +45,15 @@ const ChallengeModal = ({ challengeId, onClose }) => {
   if (!challengeId) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="relative bg-[#12141A] rounded-xl p-6 max-w-lg w-full mx-4" onClick={e => e.stopPropagation()}>
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white"
-        >
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-[#12141A] rounded-xl p-6 max-w-lg w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
           <X className="w-6 h-6" />
         </button>
 
@@ -125,11 +128,17 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
         <div className="bg-[#12141A] backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/30 group-hover:shadow-purple-500/10 transition-all duration-300">
           {/* Post Header */}
           <div className="p-4 flex items-center space-x-3 border-b border-white/10">
-            <Link to={`/profile/${post.creator_id}`} className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-transform">
+            <Link
+              to={`/profile/${post.creator_id}`}
+              className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-transform"
+            >
               {post.creator_name[0]}
             </Link>
             <div>
-              <Link to={`/profile/${post.creator_id}`} className="font-medium text-white hover:text-purple-400 transition-colors">
+              <Link
+                to={`/profile/${post.creator_id}`}
+                className="font-medium text-white hover:text-purple-400 transition-colors"
+              >
                 {post.creator_name}
               </Link>
               <div className="flex items-center space-x-2 text-sm text-gray-400">
@@ -140,7 +149,9 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                     <span className="mx-1">•</span>
                     <Trophy className="w-4 h-4 text-yellow-500" />
                     <span
-                      className={`${post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"} cursor-pointer hover:underline`}
+                      className={`${
+                        post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"
+                      } cursor-pointer hover:underline`}
                       onClick={() => post.challenge && setShowChallengeModal(true)}
                     >
                       {post.challengeTitle}
@@ -241,10 +252,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
         <ImageModal imageUrl={post.imageUrl} onClose={() => setShowImageModal(false)} />
       )}
       {showChallengeModal && (
-        <ChallengeModal
-          challengeId={post.challenge}
-          onClose={() => setShowChallengeModal(false)}
-        />
+        <ChallengeModal challengeId={post.challenge} onClose={() => setShowChallengeModal(false)} />
       )}
     </>
   );

@@ -312,13 +312,19 @@ const Chat = () => {
               onClick={() => setShowSidebar(!showSidebar)}
               className="lg:hidden fixed bottom-4 right-4 z-50 p-3 bg-purple-500 rounded-full shadow-lg shadow-purple-500/20"
             >
-              {showSidebar ? <X className="w-6 h-6 text-white" /> : <Users className="w-6 h-6 text-white" />}
+              {showSidebar ? (
+                <X className="w-6 h-6 text-white" />
+              ) : (
+                <Users className="w-6 h-6 text-white" />
+              )}
             </button>
 
             {/* Left Sidebar - Friends List */}
-            <div className={`${
-              showSidebar ? 'fixed inset-0 z-40 bg-[#0A0B0F]' : 'hidden'
-            } lg:relative lg:block lg:col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col`}>
+            <div
+              className={`${
+                showSidebar ? "fixed inset-0 z-40 bg-[#0A0B0F]" : "hidden"
+              } lg:relative lg:block lg:col-span-3 bg-[#12141A] rounded-xl border border-white/10 overflow-hidden flex flex-col`}
+            >
               <div className="p-4 border-b border-white/10 flex-shrink-0">
                 <div className="relative flex gap-2">
                   <div className="relative flex-1">
@@ -334,9 +340,9 @@ const Chat = () => {
                   </div>
                   <button
                     onClick={handleSearch}
-                    className="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+                    className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity"
                   >
-                    <Search className="w-4 h-4" />
+                    <Search className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -368,18 +374,12 @@ const Chat = () => {
                           </button>
                         )}
                         {result.requestSent && (
-                          <button
-                            disabled
-                            className="p-1.5 bg-purple-500/50 text-white rounded-lg"
-                          >
+                          <button disabled className="p-1.5 bg-purple-500/50 text-white rounded-lg">
                             <Check className="w-4 h-4" />
                           </button>
                         )}
                         {result.isFriend && (
-                          <button
-                            disabled
-                            className="p-1.5 bg-green-500/50 text-white rounded-lg"
-                          >
+                          <button disabled className="p-1.5 bg-green-500/50 text-white rounded-lg">
                             <Check className="w-4 h-4" />
                           </button>
                         )}
@@ -455,9 +455,11 @@ const Chat = () => {
             </div>
 
             {/* Main Chat Area */}
-            <div className={`${
-              showSidebar ? 'hidden' : 'flex'
-            } lg:flex lg:col-span-9 bg-[#12141A] rounded-xl border border-white/10 flex-col overflow-hidden backdrop-blur-lg shadow-2xl`}>
+            <div
+              className={`${
+                showSidebar ? "hidden" : "flex"
+              } lg:flex lg:col-span-9 bg-[#12141A] rounded-xl border border-white/10 flex-col overflow-hidden backdrop-blur-lg shadow-2xl`}
+            >
               {selectedUser ? (
                 <>
                   {/* Chat Header */}
@@ -477,7 +479,11 @@ const Chat = () => {
                   <div className="flex-1 overflow-y-auto min-h-0 bg-gradient-to-b from-[#12141A] to-[#0A0B0F]">
                     <div className="p-4 space-y-4">
                       {messages.map((message) => (
-                        <MessageBubble key={message._id} message={message} isOwnMessage={message.sender._id === user._id} />
+                        <MessageBubble
+                          key={message._id}
+                          message={message}
+                          isOwnMessage={message.sender._id === user._id}
+                        />
                       ))}
                       <div ref={messagesEndRef} />
                     </div>
