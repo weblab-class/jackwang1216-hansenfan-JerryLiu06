@@ -356,7 +356,12 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
 // Challenge-related endpoints
 router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenges = await Challenge.find({ creator: req.user._id })
+    const challenges = await Challenge.find({
+      $and: [
+        { creator: req.user._id },
+        { recipients: { $size: 0 } } // Only get challenges that haven't been shared
+      ]
+    })
       .populate("creator", "name")
       .sort({ createdAt: -1 });
     res.send(challenges);
@@ -929,6 +934,21 @@ router.post("/challenges/:challengeId/status", auth.ensureLoggedIn, async (req, 
   } catch (err) {
     console.error("Error updating challenge status:", err);
     res.status(500).send({ error: "Failed to update challenge status" });
+  }
+});
+
+// Get challenges shared with the user
+router.get("/challenges/shared", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      "recipients.user": req.user._id
+    })
+      .populate("creator", "name")
+      .sort({ createdAt: -1 });
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting shared challenges:", err);
+    res.status(500).send({ error: "Could not get shared challenges" });
   }
 });
 

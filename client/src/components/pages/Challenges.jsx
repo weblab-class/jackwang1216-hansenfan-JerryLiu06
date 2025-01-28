@@ -204,6 +204,7 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
 
 const Challenges = ({ userId }) => {
   const [challenges, setChallenges] = useState([]);
+  const [sharedChallenges, setSharedChallenges] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -222,6 +223,7 @@ const Challenges = ({ userId }) => {
 
   useEffect(() => {
     loadChallenges();
+    loadSharedChallenges();
   }, []);
 
   const loadChallenges = async () => {
@@ -235,6 +237,15 @@ const Challenges = ({ userId }) => {
       setError("Failed to load challenges. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadSharedChallenges = async () => {
+    try {
+      const data = await get("/api/challenges/shared");
+      setSharedChallenges(data);
+    } catch (err) {
+      console.error("Failed to load shared challenges:", err);
     }
   };
 
@@ -352,6 +363,17 @@ const Challenges = ({ userId }) => {
             )}
           </button>
           <button
+            onClick={() => setActiveTab("shared")}
+            className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+              activeTab === "shared" ? "text-white" : "text-gray-400 hover:text-white"
+            }`}
+          >
+            Shared with Me
+            {activeTab === "shared" && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab("completed")}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
               activeTab === "completed" ? "text-white" : "text-gray-400 hover:text-white"
@@ -371,31 +393,47 @@ const Challenges = ({ userId }) => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {challenges
-                .filter((challenge) =>
-                  activeTab === "available" ? !challenge.completed : challenge.completed
-                )
-                .map((challenge) => (
+              {activeTab === "shared" ? (
+                sharedChallenges.map((challenge) => (
                   <ChallengeCard
                     key={challenge._id}
                     challenge={challenge}
                     onComplete={handleComplete}
                     onShare={handleShareChallenge}
                   />
-                ))}
+                ))
+              ) : (
+                challenges
+                  .filter((challenge) =>
+                    activeTab === "available" ? !challenge.completed : challenge.completed
+                  )
+                  .map((challenge) => (
+                    <ChallengeCard
+                      key={challenge._id}
+                      challenge={challenge}
+                      onComplete={handleComplete}
+                      onShare={handleShareChallenge}
+                    />
+                  ))
+              )}
             </div>
 
-            {challenges.filter((challenge) =>
-              activeTab === "available" ? !challenge.completed : challenge.completed
-            ).length === 0 && !error && (
-              <div className="text-center py-12">
-                <p className="text-gray-400">
-                  {activeTab === "available"
-                    ? "No available challenges. Generate one to get started!"
-                    : "No completed challenges yet. Complete some challenges to see them here!"}
-                </p>
-              </div>
-            )}
+            {((activeTab === "available" &&
+              challenges.filter((c) => !c.completed).length === 0) ||
+              (activeTab === "completed" &&
+                challenges.filter((c) => c.completed).length === 0) ||
+              (activeTab === "shared" && sharedChallenges.length === 0)) &&
+              !error && (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">
+                    {activeTab === "available"
+                      ? "No available challenges. Generate one to get started!"
+                      : activeTab === "shared"
+                      ? "No challenges have been shared with you yet."
+                      : "No completed challenges yet. Complete some challenges to see them here!"}
+                  </p>
+                </div>
+              )}
           </>
         )}
 
