@@ -3,6 +3,7 @@ import { get } from "../../utilities";
 import { Link } from "react-router-dom";
 import { Trophy, Medal, Award, Crown } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
+import LoadingSpinner from "../modules/LoadingSpinner.jsx";
 
 const LeaderboardRow = ({ user, rank }) => {
   const getRankIcon = () => {
@@ -49,78 +50,67 @@ const Leaderboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    get("/api/leaderboard")
-      .then((data) => {
-        setUsers(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch leaderboard:", err);
-        setError("Failed to load leaderboard. Please try again later.");
-        setLoading(false);
-      });
+    loadLeaderboard();
   }, []);
 
-  if (loading) {
-    return (
-      <>
-        <NavBar />
-        <div className="min-h-screen bg-[#12141A] text-white">
-          <div className="max-w-4xl mx-auto px-4 py-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-gray-400">Loading leaderboard...</div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <NavBar />
-        <div className="min-h-screen bg-[#12141A] text-white">
-          <div className="max-w-4xl mx-auto px-4 py-8">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-red-400">{error}</div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const loadLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const data = await get("/api/leaderboard");
+      setUsers(data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load leaderboard:", err);
+      setError("Failed to load leaderboard. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
+    <div className="min-h-screen bg-[#12141A] pt-16">
       <NavBar />
-      <div className="min-h-screen bg-[#12141A] text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">Leaderboard</h1>
-            <p className="text-gray-400">Top challengers ranked by points</p>
-          </div>
-
-          <div className="space-y-4">
-            {users.map((user, index) => (
-              <LeaderboardRow key={user._id} user={user} rank={index + 1} />
-            ))}
-          </div>
-
-          {users.length === 0 && (
-            <div className="relative group mt-8">
-              <div className="absolute -inset-px bg-white/5 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
-              <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-8 text-center">
-                <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">
-                  No users have earned points yet. Complete challenges to get on the leaderboard!
-                </p>
-              </div>
-            </div>
-          )}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center space-x-2 text-red-400">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <div>
+            <div className="mb-8">
+              <p className="text-gray-400">Top challengers ranked by points</p>
+            </div>
+
+            <div className="space-y-4">
+              {users.map((user, index) => (
+                <LeaderboardRow key={user._id} user={user} rank={index + 1} />
+              ))}
+            </div>
+
+            {users.length === 0 && (
+              <div className="relative group mt-8">
+                <div className="absolute -inset-px bg-white/5 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
+                <div className="relative bg-[#12141A] rounded-xl border border-white/10 p-8 text-center">
+                  <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">
+                    No users have earned points yet. Complete challenges to get on the leaderboard!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 

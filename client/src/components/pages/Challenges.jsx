@@ -205,6 +205,7 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
 const Challenges = ({ userId }) => {
   const [challenges, setChallenges] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("available");
   const [newChallenge, setNewChallenge] = useState(null);
@@ -226,6 +227,7 @@ const Challenges = ({ userId }) => {
   }, []);
 
   const loadChallenges = async () => {
+    setIsLoading(true);
     try {
       const data = await get("/api/challenges");
       setChallenges(data);
@@ -233,6 +235,8 @@ const Challenges = ({ userId }) => {
     } catch (err) {
       console.error("Failed to load challenges:", err);
       setError("Failed to load challenges. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -405,33 +409,41 @@ const Challenges = ({ userId }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {challenges
-            .filter((challenge) =>
-              activeTab === "available" ? !challenge.completed : challenge.completed
-            )
-            .map((challenge) => (
-              <ChallengeCard
-                key={challenge._id}
-                challenge={challenge}
-                onComplete={handleComplete}
-                onShare={handleShareChallenge}
-              />
-            ))}
-        </div>
-
-        {challenges.filter((challenge) =>
-          activeTab === "available" ? !challenge.completed : challenge.completed
-        ).length === 0 &&
-          !error && (
-            <div className="text-center py-12">
-              <p className="text-gray-400">
-                {activeTab === "available"
-                  ? "No available challenges. Generate one to get started!"
-                  : "No completed challenges yet. Complete some challenges to see them here!"}
-              </p>
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {challenges
+                .filter((challenge) =>
+                  activeTab === "available" ? !challenge.completed : challenge.completed
+                )
+                .map((challenge) => (
+                  <ChallengeCard
+                    key={challenge._id}
+                    challenge={challenge}
+                    onComplete={handleComplete}
+                    onShare={handleShareChallenge}
+                  />
+                ))}
             </div>
-          )}
+
+            {challenges.filter((challenge) =>
+              activeTab === "available" ? !challenge.completed : challenge.completed
+            ).length === 0 &&
+              !error && (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">
+                    {activeTab === "available"
+                      ? "No available challenges. Generate one to get started!"
+                      : "No completed challenges yet. Complete some challenges to see them here!"}
+                  </p>
+                </div>
+              )}
+          </>
+        )}
       </div>
 
       {showFeedbackModal && (

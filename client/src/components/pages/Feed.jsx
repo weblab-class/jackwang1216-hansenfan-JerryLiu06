@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import Tutorial from "../modules/Tutorial.jsx";
+import LoadingSpinner from "../modules/LoadingSpinner.jsx";
 
 const ChallengeModal = ({ challengeId, onClose }) => {
   const [challenge, setChallenge] = useState(null);
@@ -50,35 +51,28 @@ const ChallengeModal = ({ challengeId, onClose }) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white"
         >
-          <X className="w-5 h-5" />
+          <X className="w-6 h-6" />
         </button>
-        
+
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Hourglass className="w-6 h-6 text-purple-500 animate-spin" />
-          </div>
+          <LoadingSpinner />
         ) : error ? (
-          <div className="text-red-400 text-center py-4 flex items-center justify-center space-x-2">
-            <X className="w-5 h-5" />
-            <span>Failed to load challenge details</span>
-          </div>
-        ) : challenge ? (
-          <>
-            <div className="flex items-center space-x-3 mb-4">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              <h3 className="text-xl font-bold text-white">{challenge.title}</h3>
-            </div>
-            <p className="text-gray-300 mb-4">{challenge.description}</p>
-            <div className="flex items-center space-x-4 text-sm text-gray-400">
-              <div className="flex items-center space-x-1">
-                <span className="font-medium text-purple-400">{challenge.points} Points</span>
-                <span>•</span>
-                <span>{challenge.difficulty}</span>
+          <div className="text-red-400 text-center py-8">{error}</div>
+        ) : (
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">{challenge.title}</h2>
+            <p className="text-gray-400 mb-6">{challenge.description}</p>
+            <div className="flex items-center justify-between text-sm text-gray-400">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                <span>Due {new Date(challenge.dueDate).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                <span>{challenge.points} Points</span>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="text-gray-400 text-center py-4">Challenge not found</div>
+          </div>
         )}
       </div>
     </div>
@@ -537,7 +531,7 @@ const Feed = () => {
           })}
           {loading && (
             <div className="flex justify-center items-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <LoadingSpinner />
             </div>
           )}
         </div>
