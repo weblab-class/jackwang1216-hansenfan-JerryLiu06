@@ -100,27 +100,31 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
 });
 
 // Get all posts
-router.get("/posts", (req, res) => {
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = parseInt(req.query.skip) || 0;
+router.get("/posts", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = parseInt(req.query.skip) || 0;
 
-  Post.find({})
-    .sort({ timestamp: -1 })
-    .skip(skip)
-    .limit(limit)
-    .then((posts) => {
-      Post.countDocuments({}).then((total) => {
-        res.send({
-          posts,
-          hasMore: skip + posts.length < total,
-          total,
-        });
-      });
-    })
-    .catch((err) => {
-      console.error("Error fetching posts:", err);
-      res.status(500).send({ error: "Failed to fetch posts" });
+    // Execute both queries in parallel
+    const [posts, total] = await Promise.all([
+      Post.find({})
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      Post.countDocuments({})
+    ]);
+
+    res.send({
+      posts,
+      hasMore: skip + posts.length < total,
+      total,
     });
+  } catch (err) {
+    console.error("Error fetching posts:", err);
+    res.status(500).send({ error: "Failed to fetch posts" });
+  }
 });
 
 // Create a new post
@@ -492,70 +496,6 @@ router.post("/challenge/:challengeId/feedback", auth.ensureLoggedIn, async (req,
   }
 });
 
-// Get personalized challenge recommendations
-router.get("/challenges/recommended", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    // Get user's completed challenges with their feedback
-    const userCompletedChallenges = await Challenge.find({
-      "userRatings.user": req.user._id,
-    });
-
-    // If user hasn't completed any challenges, return highest rated challenges
-    if (userCompletedChallenges.length === 0) {
-      const topChallenges = await Challenge.find({
-        completed: false,
-      })
-        .sort({ averageRating: -1 })
-        .limit(3);
-      return res.send(topChallenges);
-    }
-
-    // Analyze user preferences
-    const userPreferences = {
-      preferredDifficulty: new Set(),
-      highRatedChallenges: [],
-      avgTimeSpent: 0,
-      totalFeedback: 0,
-    };
-
-    userCompletedChallenges.forEach((challenge) => {
-      const userRating = challenge.userRatings.find((r) => r.user.equals(req.user._id));
-      if (userRating) {
-        userPreferences.preferredDifficulty.add(challenge.difficulty);
-        if (userRating.rating >= 4) {
-          userPreferences.highRatedChallenges.push(challenge);
-        }
-        userPreferences.avgTimeSpent += userRating.timeSpent;
-        userPreferences.totalFeedback++;
-      }
-    });
-
-    userPreferences.avgTimeSpent /= userPreferences.totalFeedback;
-
-    // Find challenges similar to ones the user enjoyed
-    const recommendedChallenges = await Challenge.find({
-      _id: { $nin: userCompletedChallenges.map((c) => c._id) },
-      difficulty: { $in: Array.from(userPreferences.preferredDifficulty) },
-      completed: false,
-    })
-      .sort({
-        averageRating: -1,
-        // Prefer challenges with similar time commitment
-        $expr: {
-          $abs: {
-            $subtract: ["$averageTimeSpent", userPreferences.avgTimeSpent],
-          },
-        },
-      })
-      .limit(3);
-
-    res.send(recommendedChallenges);
-  } catch (err) {
-    console.log(err);
-    res.status(500).send({ error: "Error getting recommendations" });
-  }
-});
-
 // Get user profile data
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
@@ -811,6 +751,9 @@ router.post("/admin/reset", async (req, res) => {
     // Clear all challenges
     await Challenge.deleteMany({});
 
+    // Clear all posts
+    await Post.deleteMany({});
+
     // Reset all user scores and completed challenges
     await User.updateMany(
       {},
@@ -829,7 +772,8 @@ router.post("/admin/reset", async (req, res) => {
       }
     );
 
-    res.send({ message: "Successfully reset all challenges and scores" });
+    console.log("Successfully reset all challenges, posts, and user scores");
+    res.send({ message: "Successfully reset all challenges, posts, and scores" });
   } catch (err) {
     console.log(err);
     res.status(500).send({ error: "Failed to reset data" });
@@ -985,6 +929,19 @@ router.post("/challenges/:challengeId/status", auth.ensureLoggedIn, async (req, 
   } catch (err) {
     console.error("Error updating challenge status:", err);
     res.status(500).send({ error: "Failed to update challenge status" });
+  }
+});
+
+// Admin endpoint to clear all posts
+router.post("/admin/clear-posts", async (req, res) => {
+  try {
+    // Clear all posts
+    await Post.deleteMany({});
+    console.log("All posts cleared successfully");
+    res.send({ message: "All posts cleared successfully" });
+  } catch (err) {
+    console.error("Error clearing posts:", err);
+    res.status(500).send({ error: "Failed to clear posts" });
   }
 });
 

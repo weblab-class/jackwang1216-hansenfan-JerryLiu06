@@ -437,7 +437,7 @@ const Feed = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
-  const POSTS_PER_PAGE = 10;
+  const POSTS_PER_PAGE = 5;
 
   useEffect(() => {
     get("/api/whoami").then((user) => {
@@ -469,19 +469,25 @@ const Feed = () => {
   }, [page]);
 
   const loadPosts = async () => {
-    if (loading || !hasMore) return;
+    if (loading || !hasMore) {
+      console.log("Skipping loadPosts - loading:", loading, "hasMore:", hasMore);
+      return;
+    }
     setLoading(true);
+    console.log("Loading posts - page:", page);
     try {
       const response = await get("/api/posts", {
         limit: POSTS_PER_PAGE,
         skip: page * POSTS_PER_PAGE,
       });
+      console.log("Posts response:", response);
       setPosts((prevPosts) => (page === 0 ? response.posts : [...prevPosts, ...response.posts]));
       setHasMore(response.hasMore);
     } catch (err) {
       console.error("Error loading posts:", err);
     } finally {
       setLoading(false);
+      console.log("Finished loading posts");
     }
   };
 

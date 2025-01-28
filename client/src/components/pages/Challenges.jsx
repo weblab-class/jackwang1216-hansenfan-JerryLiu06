@@ -218,12 +218,10 @@ const Challenges = ({ userId }) => {
     timeSpent: 30,
     feedback: "",
   });
-  const [recommendedChallenges, setRecommendedChallenges] = useState([]);
   const [shareChallengeModal, setShareChallengeModal] = useState(null);
 
   useEffect(() => {
     loadChallenges();
-    loadRecommendedChallenges();
   }, []);
 
   const loadChallenges = async () => {
@@ -237,15 +235,6 @@ const Challenges = ({ userId }) => {
       setError("Failed to load challenges. Please try again.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadRecommendedChallenges = async () => {
-    try {
-      const challenges = await get("/api/challenges/recommended");
-      setRecommendedChallenges(challenges);
-    } catch (err) {
-      console.log(err);
     }
   };
 
@@ -350,40 +339,6 @@ const Challenges = ({ userId }) => {
           />
         )}
 
-        {recommendedChallenges.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">Recommended for You</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recommendedChallenges.map((challenge) => (
-                <div
-                  key={challenge._id}
-                  className="bg-[#1C1F26] rounded-lg p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">{challenge.title}</h3>
-                    <span className="text-sm px-2 py-1 bg-purple-500/20 rounded">
-                      {challenge.difficulty}
-                    </span>
-                  </div>
-                  <p className="text-gray-400 mb-4">{challenge.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      <span>⭐ {challenge.averageRating?.toFixed(1) || "New"}</span>
-                      <span>⏱️ ~{Math.round(challenge.averageTimeSpent || 30)}min</span>
-                    </div>
-                    <button
-                      onClick={() => handleComplete(challenge)}
-                      className="px-4 py-2 bg-purple-600 rounded hover:bg-purple-500 transition-colors"
-                    >
-                      Start Challenge
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="mb-6 flex space-x-4 border-b border-white/10">
           <button
             onClick={() => setActiveTab("available")}
@@ -432,113 +387,35 @@ const Challenges = ({ userId }) => {
 
             {challenges.filter((challenge) =>
               activeTab === "available" ? !challenge.completed : challenge.completed
-            ).length === 0 &&
-              !error && (
-                <div className="text-center py-12">
-                  <p className="text-gray-400">
-                    {activeTab === "available"
-                      ? "No available challenges. Generate one to get started!"
-                      : "No completed challenges yet. Complete some challenges to see them here!"}
-                  </p>
-                </div>
-              )}
+            ).length === 0 && !error && (
+              <div className="text-center py-12">
+                <p className="text-gray-400">
+                  {activeTab === "available"
+                    ? "No available challenges. Generate one to get started!"
+                    : "No completed challenges yet. Complete some challenges to see them here!"}
+                </p>
+              </div>
+            )}
           </>
         )}
+
+        {shareChallengeModal && (
+          <ShareChallengeModal
+            challenge={shareChallengeModal}
+            onClose={handleCloseShareChallengeModal}
+          />
+        )}
+
+        {showFeedbackModal && selectedChallenge && (
+          <FeedbackModal
+            challenge={selectedChallenge}
+            feedback={feedback}
+            setFeedback={setFeedback}
+            onSubmit={handleFeedbackSubmit}
+            onClose={() => setShowFeedbackModal(false)}
+          />
+        )}
       </div>
-
-      {showFeedbackModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-[#1C1F26] rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Challenge Feedback</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Rating (1-5)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  className="w-full px-3 py-2 bg-[#2D3139] rounded border border-gray-600"
-                  value={feedback.rating}
-                  onChange={(e) => setFeedback({ ...feedback, rating: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  How enjoyable was this challenge? (1-5)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  className="w-full px-3 py-2 bg-[#2D3139] rounded border border-gray-600"
-                  value={feedback.enjoymentLevel}
-                  onChange={(e) =>
-                    setFeedback({ ...feedback, enjoymentLevel: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  How productive did you feel? (1-5)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  className="w-full px-3 py-2 bg-[#2D3139] rounded border border-gray-600"
-                  value={feedback.productivityScore}
-                  onChange={(e) =>
-                    setFeedback({ ...feedback, productivityScore: Number(e.target.value) })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Time spent (minutes)</label>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full px-3 py-2 bg-[#2D3139] rounded border border-gray-600"
-                  value={feedback.timeSpent}
-                  onChange={(e) => setFeedback({ ...feedback, timeSpent: Number(e.target.value) })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Additional feedback</label>
-                <textarea
-                  className="w-full px-3 py-2 bg-[#2D3139] rounded border border-gray-600 h-24"
-                  value={feedback.feedback}
-                  onChange={(e) => setFeedback({ ...feedback, feedback: e.target.value })}
-                  placeholder="Share your thoughts..."
-                />
-              </div>
-              <div className="flex justify-end pt-4">
-                <button
-                  className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                  onClick={() => {
-                    setShowFeedbackModal(false);
-                    setSelectedChallenge(null);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500"
-                  onClick={handleFeedbackSubmit}
-                >
-                  Submit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {shareChallengeModal && (
-        <ShareChallengeModal
-          challenge={shareChallengeModal}
-          onClose={handleCloseShareChallengeModal}
-        />
-      )}
     </div>
   );
 };
