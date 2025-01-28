@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { get, post } from "../../utilities";
 import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X, Share2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
@@ -60,6 +60,8 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     // Get user's friends
@@ -67,6 +69,21 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
       setFriends(user.friends || []);
     });
   }, []);
+
+  useEffect(() => {
+    // Add click outside listener
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    // Only add the listener when the dropdown is open
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,6 +100,27 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleUser = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const getSelectedNames = () => {
+    if (selectedUsers.length === 0) return "Select friends";
+    
+    const selectedNames = selectedUsers
+      .map(id => friends.find(f => f._id === id)?.name)
+      .filter(Boolean);
+    
+    if (selectedNames.length <= 2) {
+      return selectedNames.join(", ");
+    }
+    return `${selectedNames[0]}, ${selectedNames[1]}, +${selectedNames.length - 2} more`;
   };
 
   return (
@@ -103,28 +141,48 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">Share with Friends</label>
-            <div className="space-y-2">
-              {friends.length === 0 ? (
-                <p className="text-gray-400">No friends found. Add some friends to share challenges!</p>
-              ) : (
-                <select
-                  multiple
-                  value={selectedUsers}
-                  onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setSelectedUsers(selected);
-                  }}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  size={Math.min(friends.length, 5)}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 flex justify-between items-center"
+              >
+                <span className="truncate pr-8">
+                  {getSelectedNames()}
+                </span>
+                <svg 
+                  className={`w-5 h-5 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
                 >
-                  {friends.map((friend) => (
-                    <option key={friend._id} value={friend._id} className="py-2">
-                      {friend.name}
-                    </option>
-                  ))}
-                </select>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-[#1C1F26] border border-white/10 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {friends.length === 0 ? (
+                    <p className="text-gray-400 p-3">No friends found. Add some friends to share challenges!</p>
+                  ) : (
+                    friends.map((friend) => (
+                      <div
+                        key={friend._id}
+                        className="flex items-center px-3 py-2 hover:bg-white/5 cursor-pointer"
+                        onClick={() => toggleUser(friend._id)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(friend._id)}
+                          onChange={() => {}}
+                          className="w-4 h-4 rounded border-gray-300 text-purple-500 focus:ring-purple-500"
+                        />
+                        <span className="ml-2 text-white">{friend.name}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
-              <p className="text-sm text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple friends</p>
             </div>
           </div>
 
