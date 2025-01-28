@@ -68,7 +68,7 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#12141A] pt-16">
+    <div className="min-h-screen bg-[#0A0B0F] pt-16">
       <NavBar />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -85,16 +85,10 @@ const Leaderboard = () => {
         {loading ? (
           <LoadingSpinner />
         ) : (
-          <div>
-            <div className="mb-8">
-              <p className="text-gray-400">Top challengers ranked by points</p>
-            </div>
-
-            <div className="space-y-4">
-              {users.map((user, index) => (
-                <LeaderboardRow key={user._id} user={user} rank={index + 1} />
-              ))}
-            </div>
+          <div className="space-y-4">
+            {users.map((user, index) => (
+              <LeaderboardRow key={user._id} user={user} rank={index + 1} />
+            ))}
 
             {users.length === 0 && (
               <div className="relative group mt-8">
