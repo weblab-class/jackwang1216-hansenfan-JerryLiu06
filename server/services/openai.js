@@ -118,6 +118,10 @@ const analyzeUserPreferences = async (userId) => {
   }
 };
 
+// Track recently generated challenges to avoid repetition
+const recentChallenges = new Set();
+const MAX_RECENT_CHALLENGES = 50; // Keep track of last 50 challenges
+
 const generateChallenge = async (difficulty = "Intermediate", userId = null) => {
   if (!openai) {
     throw new Error("OpenAI API key not configured");
@@ -128,8 +132,37 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
+    // Define challenge categories
+    const challengeCategories = [
+      "Physical Activity",
+      "Mental Health",
+      "Learning",
+      "Social Connection",
+      "Creativity",
+      "Productivity",
+      "Personal Growth",
+      "Mindfulness",
+      "Environmental Impact",
+      "Community Service"
+    ];
+
     let systemPrompt =
+<<<<<<< Updated upstream
       "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate. The challenge duration should be either 1-Day (Easy), 3-Day (Medium), or 7-Day (Hard). The title MUST start with the duration (e.g., '1-Day: [Challenge Name]', '3-Day: [Challenge Name]', or '7-Day: [Challenge Name]'). Make sure to also mention the duration in the challenge description.";
+=======
+      "Generate a unique and creative challenge that pushes people out of their comfort zone while being safe and appropriate. Follow these guidelines:\n" +
+      "1. The challenge should be specific, actionable, and measurable\n" +
+      "2. Avoid generic or commonly repeated challenges\n" +
+      "3. Include unexpected twists or creative combinations of activities\n" +
+      "4. Focus on personal growth and meaningful impact\n" +
+      "5. The challenge duration should be either 1 day (easy), 3 days (medium), or 7 days/1 week (hard)\n" +
+      "6. The title MUST start with the duration (e.g., '1-Day: [Challenge Name]', '3-Day: [Challenge Name]', or '7-Day: [Challenge Name]').\n" +
+      "7. Make sure to explicitly mention the duration in the challenge description\n" +
+      "8. Choose from these diverse categories: " +
+      challengeCategories.join(", ") +
+      "\n\nRecently generated challenges to AVOID similarity with:\n" +
+      Array.from(recentChallenges).slice(0, 3).map(title => `- ${title}`).join("\n");
+>>>>>>> Stashed changes
 
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
@@ -175,13 +208,20 @@ ${Array.from(userPreferences.commonKeywords.entries())
         {
           role: "user",
           content: `Generate a ${difficulty.toLowerCase()} difficulty challenge with the following duration:
+<<<<<<< Updated upstream
 ${difficulty === "Easy" ? "1-Day" : difficulty === "Medium" ? "3-Day" : "7-Day"}.
 The response should be in JSON format with title (must start with the duration), description, and challengeType fields.
 Make sure to explicitly mention the duration in both the title and description.
 Example title format: "1-Day: Practice Public Speaking", "3-Day: Learn a New Recipe", "7-Day: Daily Meditation"`,
+=======
+${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
+The response should be in JSON format with title, description, challengeType (one of: ${challengeCategories.join(", ")}) fields.
+Make sure to explicitly mention the duration in the description.
+The challenge should be significantly different from recently generated challenges.`,
+>>>>>>> Stashed changes
         },
       ],
-      temperature: 1.0,
+      temperature: 1.2, // Increased for more creativity
       max_tokens: 2048,
     });
 
@@ -190,6 +230,14 @@ Example title format: "1-Day: Practice Public Speaking", "3-Day: Learn a New Rec
 
     try {
       const challenge = JSON.parse(response);
+
+      // Add to recent challenges and maintain max size
+      recentChallenges.add(challenge.title);
+      if (recentChallenges.size > MAX_RECENT_CHALLENGES) {
+        const firstItem = recentChallenges.values().next().value;
+        recentChallenges.delete(firstItem);
+      }
+
       challenge.points = calculatePersonalizedPoints(challenge, userPreferences);
       challenge.difficulty = difficulty;
       return challenge;
