@@ -88,11 +88,19 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   const handleLike = async () => {
     if (isLiking) return;
     setIsLiking(true);
+    
+    // Optimistically update the UI
+    const updatedLikes = [...(post.likes || []), userId];
+    if (onLike) onLike(post._id, updatedLikes);
+    
     try {
       const response = await apiPost(`/api/posts/${post._id}/like`);
+      // Server response will confirm the update
       if (onLike) onLike(post._id, response.likes);
     } catch (err) {
       console.error("Error liking post:", err);
+      // Revert on error
+      if (onLike) onLike(post._id, post.likes || []);
     } finally {
       setIsLiking(false);
     }

@@ -56,14 +56,7 @@ router.post("/posts/:postId/like", auth.ensureLoggedIn, async (req, res) => {
     }
 
     const userId = req.user._id;
-    const likeIndex = post.likes.indexOf(userId);
-
-    if (likeIndex === -1) {
-      post.likes.push(userId);
-    } else {
-      post.likes.splice(likeIndex, 1);
-    }
-
+    post.likes.push(userId);
     await post.save();
     res.send({ likes: post.likes });
   } catch (err) {
