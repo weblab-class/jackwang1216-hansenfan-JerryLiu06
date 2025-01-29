@@ -11,7 +11,11 @@ const ChallengeCard = ({ challenge, onComplete, onShare }) => {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
-            <span className="text-sm px-2 py-1 bg-white/5 rounded-lg text-white">
+            <span className={`text-sm px-2 py-1 rounded-lg ${
+              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+              "bg-red-500/10 text-red-400"
+            }`}>
               {challenge.difficulty}
             </span>
           </div>

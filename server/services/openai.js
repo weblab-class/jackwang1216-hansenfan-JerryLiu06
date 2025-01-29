@@ -129,7 +129,7 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
     let systemPrompt =
-      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate, make the duration of the challenge a week or less.";
+      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate. The challenge duration should be either 1 day (easy), 3 days (medium), or 7 days/1 week (hard). Make sure to explicitly mention the duration in the challenge description.";
 
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
@@ -174,7 +174,10 @@ ${Array.from(userPreferences.commonKeywords.entries())
         },
         {
           role: "user",
-          content: `Generate a ${difficulty.toLowerCase()} difficulty challenge. The response should be in JSON format with title, description, and challengeType fields.`,
+          content: `Generate a ${difficulty.toLowerCase()} difficulty challenge with the following duration:
+${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
+The response should be in JSON format with title, description, and challengeType fields.
+Make sure to explicitly mention the duration in the description.`,
         },
       ],
       temperature: 1.0,

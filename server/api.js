@@ -371,8 +371,15 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
       });
     }
 
+    const durations = [
+      { days: 1, difficulty: "Easy" },
+      { days: 3, difficulty: "Medium" },
+      { days: 7, difficulty: "Hard" }
+    ];
+    const randomDuration = durations[Math.floor(Math.random() * durations.length)];
+
     const challenge = await generateChallenge(
-      req.body.difficulty || "Intermediate",
+      randomDuration.difficulty,
       user.userProfile
     );
 
@@ -380,9 +387,9 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
       title: challenge.title,
       description: challenge.description,
       points: challenge.points,
-      difficulty: req.body.difficulty || "Intermediate",
+      difficulty: randomDuration.difficulty,
       creator: req.user._id,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      deadline: new Date(Date.now() + randomDuration.days * 24 * 60 * 60 * 1000),
     });
 
     await newChallenge.save();

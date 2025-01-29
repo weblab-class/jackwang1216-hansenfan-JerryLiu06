@@ -5,14 +5,20 @@ const ChallengeSchema = new mongoose.Schema({
   description: String,
   difficulty: {
     type: String,
-    enum: ["Beginner", "Intermediate", "Advanced"],
-    default: "Intermediate",
+    enum: ["Easy", "Medium", "Hard"],
+    default: "Medium",
   },
   points: {
     type: Number,
-    min: 1,
-    max: 10,
-    default: 5,
+    min: 5,
+    max: 15,
+    default: 10,
+    set: function(value) {
+      if (this.difficulty === "Easy") return 5;
+      if (this.difficulty === "Medium") return 10;
+      if (this.difficulty === "Hard") return 15;
+      return value;
+    }
   },
   creator: {
     type: mongoose.Schema.Types.ObjectId,
