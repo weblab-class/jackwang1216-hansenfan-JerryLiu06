@@ -13,7 +13,7 @@ const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) =>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-semibold text-white truncate max-w-[70%]">
-              {challenge.title.replace(/challenge/i, 'Challenge')}
+              {challenge.title.replace(/challenge/i, "Challenge")}
             </h3>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex items-center text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 whitespace-nowrap">
@@ -100,7 +100,9 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose, isSharedChalle
 
         <div className="space-y-4 mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-white">{challenge.title.replace(/challenge/i, 'Challenge')}</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {challenge.title.replace(/challenge/i, "Challenge")}
+            </h3>
             <p className="text-gray-400">{challenge.description}</p>
           </div>
 
@@ -238,7 +240,9 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
         </div>
 
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">{challenge.title.replace(/challenge/i, 'Challenge')}</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {challenge.title.replace(/challenge/i, "Challenge")}
+          </h3>
           <p className="text-gray-400">{challenge.description}</p>
         </div>
 
@@ -447,14 +451,18 @@ const PointsVerificationModal = ({ challenge, onAccept, onClose }) => {
 
         <div className="space-y-4 mb-6">
           <p className="text-gray-400">
-            Great job completing the challenge! Would you like to earn {challenge.points} points by creating a post about your experience?
+            Great job completing the challenge! Would you like to earn {challenge.points} points by
+            creating a post about your experience?
           </p>
           <div className="bg-white/5 p-4 rounded-lg">
             <p className="text-sm text-gray-400">
               To earn points:
-              <br />1. Create a post about this challenge
-              <br />2. Share your experience and insights
-              <br />3. Get your points automatically once posted!
+              <br />
+              1. Create a post about this challenge
+              <br />
+              2. Share your experience and insights
+              <br />
+              3. Get your points automatically once posted!
             </p>
           </div>
         </div>
@@ -758,7 +766,7 @@ const Challenges = ({ userId }) => {
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-semibold text-white truncate max-w-[70%]">
-                              {challenge.title.replace(/challenge/i, 'Challenge')}
+                              {challenge.title.replace(/challenge/i, "Challenge")}
                             </h3>
                             <div className="flex items-center gap-2 shrink-0">
                               <div className="flex items-center text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 whitespace-nowrap">

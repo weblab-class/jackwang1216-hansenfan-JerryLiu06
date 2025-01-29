@@ -205,6 +205,9 @@ const generateChallenge = async (userId) => {
         role: "system",
         content: `You are a challenge generator for an app called Boldly that helps users break out of their comfort zones.
 
+          IMPORTANT: You must respond with ONLY a valid JSON object in the exact format specified below.
+          Do not include any other text or explanation in your response.
+
           Generate a UNIQUE challenge that:
           1. Focuses on one or more of these categories: ${selectedCategories.join(", ")}
           2. Is specific, actionable, and meaningfully different from these recent challenges: ${recentChallengesList.join(
@@ -239,7 +242,8 @@ const generateChallenge = async (userId) => {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: messages,
-      temperature: 1.0,
+      temperature: 0.7, // Lower temperature for more consistent outputs
+      max_tokens: 500,
     });
 
     console.log("OpenAI API Response:", JSON.stringify(response.choices[0], null, 2));
