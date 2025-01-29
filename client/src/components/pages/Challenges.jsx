@@ -56,6 +56,58 @@ const ChallengeCard = ({ challenge, onComplete, onShare }) => {
   );
 };
 
+const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-white"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        
+        <h2 className="text-2xl font-bold text-white mb-4">New Challenge Generated!</h2>
+        
+        <div className="space-y-4 mb-6">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
+            <p className="text-gray-400">{challenge.description}</p>
+          </div>
+          
+          <div className="flex items-center space-x-4 text-sm text-gray-400">
+            <div className="flex items-center">
+              <Trophy className="w-4 h-4 mr-1" />
+              <span>{challenge.points} pts</span>
+            </div>
+            {challenge.deadline && (
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 mr-1" />
+                <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onReject}
+            className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            Reject
+          </button>
+          <button
+            onClick={onAccept}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+          >
+            Accept Challenge
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ShareChallengeModal = ({ challenge, onClose }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [friends, setFriends] = useState([]);
