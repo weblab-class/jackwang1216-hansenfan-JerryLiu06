@@ -129,7 +129,7 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
     let systemPrompt =
-      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate. The challenge duration should be either 1 day (easy), 3 days (medium), or 7 days/1 week (hard). Make sure to explicitly mention the duration in the challenge description.";
+      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate. The challenge duration should be either 1-Day (Easy), 3-Day (Medium), or 7-Day (Hard). The title MUST start with the duration (e.g., '1-Day: [Challenge Name]', '3-Day: [Challenge Name]', or '7-Day: [Challenge Name]'). Make sure to also mention the duration in the challenge description.";
 
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
@@ -175,9 +175,10 @@ ${Array.from(userPreferences.commonKeywords.entries())
         {
           role: "user",
           content: `Generate a ${difficulty.toLowerCase()} difficulty challenge with the following duration:
-${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
-The response should be in JSON format with title, description, and challengeType fields.
-Make sure to explicitly mention the duration in the description.`,
+${difficulty === "Easy" ? "1-Day" : difficulty === "Medium" ? "3-Day" : "7-Day"}.
+The response should be in JSON format with title (must start with the duration), description, and challengeType fields.
+Make sure to explicitly mention the duration in both the title and description.
+Example title format: "1-Day: Practice Public Speaking", "3-Day: Learn a New Recipe", "7-Day: Daily Meditation"`,
         },
       ],
       temperature: 1.0,
