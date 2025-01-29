@@ -155,8 +155,7 @@ const generateChallenge = async (userId) => {
           }`
         }
       ],
-      temperature: 1.6,
-      max_tokens: 2048,
+      temperature: 0.8,
     });
 
     const challenge = JSON.parse(response.choices[0].message.content);
