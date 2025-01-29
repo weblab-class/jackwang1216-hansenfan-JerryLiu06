@@ -100,31 +100,27 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
 });
 
 // Get all posts
-router.get("/posts", async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = parseInt(req.query.skip) || 0;
+router.get("/posts", (req, res) => {
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = parseInt(req.query.skip) || 0;
 
-    // Execute both queries in parallel
-    const [posts, total] = await Promise.all([
-      Post.find({})
-        .sort({ timestamp: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .exec(),
-      Post.countDocuments({})
-    ]);
-
-    res.send({
-      posts,
-      hasMore: skip + posts.length < total,
-      total,
+  Post.find({})
+    .sort({ timestamp: -1 })
+    .skip(skip)
+    .limit(limit)
+    .then((posts) => {
+      Post.countDocuments({}).then((total) => {
+        res.send({
+          posts,
+          hasMore: skip + posts.length < total,
+          total,
+        });
+      });
+    })
+    .catch((err) => {
+      console.error("Error fetching posts:", err);
+      res.status(500).send({ error: "Failed to fetch posts" });
     });
-  } catch (err) {
-    console.error("Error fetching posts:", err);
-    res.status(500).send({ error: "Failed to fetch posts" });
-  }
 });
 
 // Create a new post
@@ -317,8 +313,7 @@ router.get("/messages/:userId", auth.ensureLoggedIn, async (req, res) => {
     })
       .sort({ timestamp: 1 })
       .populate("sender")
-      .populate("recipient")
-      .populate("challenge");
+      .populate("recipient");
 
     res.send(messages);
   } catch (err) {
@@ -356,12 +351,7 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
 // Challenge-related endpoints
 router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenges = await Challenge.find({
-      $and: [
-        { creator: req.user._id },
-        { recipients: { $size: 0 } } // Only get challenges that haven't been shared
-      ]
-    })
+    const challenges = await Challenge.find({ creator: req.user._id })
       .populate("creator", "name")
       .sort({ createdAt: -1 });
     res.send(challenges);
@@ -373,19 +363,29 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
 
 router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", req.user._id);
+    const user = await User.findById(req.user._id);
+    if (!user.hasCompletedQuestionnaire) {
+      return res.status(400).send({ 
+        error: "Please complete the initial questionnaire before generating challenges",
+        redirectTo: "/questionnaire"
+      });
+    }
+
+    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", user.userProfile);
+    
     const newChallenge = new Challenge({
       title: challenge.title,
       description: challenge.description,
-      difficulty: challenge.difficulty,
       points: challenge.points,
+      difficulty: req.body.difficulty || "Intermediate",
       creator: req.user._id,
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
     await newChallenge.save();
     res.send(newChallenge);
   } catch (err) {
-    console.log(err);
+    console.error("Error generating challenge:", err);
     res.status(500).send({ error: "Failed to generate challenge" });
   }
 });
@@ -444,60 +444,6 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error getting completed challenges:", err);
     res.status(500).send({ error: "Failed to get completed challenges" });
-  }
-});
-
-// Get challenge details
-router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const challenge = await Challenge.findById(req.params.challengeId);
-
-    if (!challenge) {
-      return res.status(404).send({ error: "Challenge not found" });
-    }
-
-    res.send(challenge);
-  } catch (err) {
-    console.error("Error fetching challenge:", err);
-    res.status(500).send({ error: "Failed to fetch challenge" });
-  }
-});
-
-// Submit feedback for a challenge
-router.post("/challenge/:challengeId/feedback", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const challenge = await Challenge.findById(req.params.challengeId);
-    if (!challenge) {
-      return res.status(404).send({ error: "Challenge not found" });
-    }
-
-    const feedback = {
-      user: req.user._id,
-      rating: req.body.rating,
-      enjoymentLevel: req.body.enjoymentLevel,
-      productivityScore: req.body.productivityScore,
-      timeSpent: req.body.timeSpent,
-      feedback: req.body.feedback,
-    };
-
-    // Remove any existing feedback from this user
-    challenge.userRatings = challenge.userRatings.filter(
-      (rating) => !rating.user.equals(req.user._id)
-    );
-
-    challenge.userRatings.push(feedback);
-
-    // Update aggregated metrics
-    const ratings = challenge.userRatings;
-    challenge.averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
-    challenge.averageTimeSpent = ratings.reduce((sum, r) => sum + r.timeSpent, 0) / ratings.length;
-    challenge.totalAttempts = ratings.length;
-
-    await challenge.save();
-    res.send(challenge);
-  } catch (err) {
-    console.log(err);
-    res.status(500).send({ error: "Error submitting feedback" });
   }
 });
 
@@ -599,110 +545,6 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
-// Get user profile data for any user
-router.get("/profile/:userId", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    // Get user data
-    const user = await User.findById(req.params.userId)
-      .populate("friends")
-      .populate("friendRequests");
-
-    if (!user) {
-      return res.status(404).send({ error: "User not found" });
-    }
-
-    // Get completed challenges
-    const completedChallenges = await Challenge.find({
-      creator: req.params.userId,
-      completed: true,
-    });
-
-    // Calculate current streak
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const recentCompletions = await Challenge.find({
-      creator: req.params.userId,
-      completed: true,
-      completedAt: { $exists: true },
-    }).sort({ completedAt: -1 });
-
-    let currentStreak = 0;
-    if (recentCompletions.length > 0) {
-      const lastCompletion = new Date(recentCompletions[0].completedAt);
-      lastCompletion.setHours(0, 0, 0, 0);
-
-      if (
-        lastCompletion.getTime() === today.getTime() ||
-        lastCompletion.getTime() === yesterday.getTime()
-      ) {
-        currentStreak = 1;
-        let checkDate = yesterday;
-
-        for (let i = 1; i < recentCompletions.length; i++) {
-          const completionDate = new Date(recentCompletions[i].completedAt);
-          completionDate.setHours(0, 0, 0, 0);
-
-          if (completionDate.getTime() === checkDate.getTime()) {
-            currentStreak++;
-            checkDate.setDate(checkDate.getDate() - 1);
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    // Get recent activity (completed challenges and posts)
-    const [recentChallenges, recentPosts] = await Promise.all([
-      Challenge.find({
-        creator: req.params.userId,
-        completed: true,
-      })
-        .sort({ completedAt: -1 })
-        .limit(5),
-      Post.find({
-        creator_id: req.params.userId,
-      })
-        .sort({ timestamp: -1 })
-        .limit(5),
-    ]);
-
-    // Combine and sort recent activity
-    const recentActivity = [
-      ...recentChallenges.map((challenge) => ({
-        type: "challenge",
-        description: `Completed challenge: ${challenge.title}`,
-        timestamp: challenge.completedAt,
-      })),
-      ...recentPosts.map((post) => ({
-        type: "post",
-        description: `Posted about challenge: ${post.challengeTitle}`,
-        timestamp: post.timestamp,
-      })),
-    ]
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 5);
-
-    // Calculate total points (XP)
-    const points = user.points || 0;
-
-    res.send({
-      points,
-      completedChallenges: completedChallenges.length,
-      currentStreak,
-      friends: user.friends,
-      friendRequests: user.friendRequests,
-      recentActivity,
-    });
-  } catch (err) {
-    console.error("Error fetching profile:", err);
-    res.status(500).send({ error: "Failed to fetch profile" });
-  }
-});
-
 router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -721,24 +563,6 @@ router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
-// Get basic user information
-router.get("/user/:userId", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).send({ error: "User not found" });
-    }
-    res.send({
-      _id: user._id,
-      name: user.name,
-      points: user.points,
-    });
-  } catch (err) {
-    console.error("Error fetching user:", err);
-    res.status(500).send({ error: "Failed to fetch user" });
-  }
-});
-
 // One-time cleanup endpoint - will be removed after use
 router.delete("/admin/challenges/cleanup", async (req, res) => {
   try {
@@ -747,221 +571,6 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
   } catch (err) {
     console.error("Error deleting challenges:", err);
     res.status(500).send({ error: "Failed to delete challenges" });
-  }
-});
-
-// Reset all challenges and scores (development only)
-router.post("/admin/reset", async (req, res) => {
-  try {
-    // Clear all challenges
-    await Challenge.deleteMany({});
-
-    // Clear all posts
-    await Post.deleteMany({});
-
-    // Reset all user scores and completed challenges
-    await User.updateMany(
-      {},
-      {
-        $set: {
-          points: 0,
-          completedChallenges: [],
-          userProfile: {
-            socialComfort: 3,
-            performanceComfort: 3,
-            physicalActivity: 3,
-            creativity: 3,
-            publicSpeaking: 3,
-          },
-        },
-      }
-    );
-
-    console.log("Successfully reset all challenges, posts, and user scores");
-    res.send({ message: "Successfully reset all challenges, posts, and scores" });
-  } catch (err) {
-    console.log(err);
-    res.status(500).send({ error: "Failed to reset data" });
-  }
-});
-
-router.get("/leaderboard", async (req, res) => {
-  try {
-    const users = await User.find({}).select("name points").sort({ points: -1 }).limit(50); // Show top 50 users
-
-    res.send(users);
-  } catch (err) {
-    console.error("Error fetching leaderboard:", err);
-    res.status(500).send({ error: "Failed to fetch leaderboard" });
-  }
-});
-
-// Share an existing challenge with users
-router.post("/challenges/:challengeId/share", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const { recipientIds } = req.body;
-    
-    if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
-      return res.status(400).send({ error: "Must specify at least one recipient" });
-    }
-
-    const challenge = await Challenge.findById(req.params.challengeId);
-    if (!challenge) {
-      return res.status(404).send({ error: "Challenge not found" });
-    }
-
-    // Create a new challenge based on the existing one
-    const sharedChallenge = new Challenge({
-      title: challenge.title,
-      description: challenge.description,
-      difficulty: challenge.difficulty,
-      points: challenge.points,
-      deadline: challenge.deadline,
-      creator: req.user._id,
-      recipients: recipientIds.map(userId => ({
-        user: userId,
-        status: "pending"
-      }))
-    });
-
-    await sharedChallenge.save();
-    await sharedChallenge.populate("recipients.user creator");
-    
-    // Create messages for each recipient
-    const messages = await Promise.all(recipientIds.map(async (recipientId) => {
-      const message = new Message({
-        sender: req.user._id,
-        recipient: recipientId,
-        content: `Shared challenge: ${sharedChallenge.title}`,
-        type: "challenge",
-        challenge: sharedChallenge._id
-      });
-      await message.save();
-      return message;
-    }));
-
-    // Notify recipients via socket
-    sharedChallenge.recipients.forEach((recipient, index) => {
-      const socket = socketManager.getSocketFromUserID(recipient.user._id);
-      if (socket) {
-        socket.emit("challenge", {
-          type: "new",
-          challenge: sharedChallenge
-        });
-        socket.emit("message", messages[index]);
-      }
-    });
-
-    res.send(sharedChallenge);
-  } catch (err) {
-    console.error("Error sharing challenge:", err);
-    res.status(500).send({ error: "Error sharing challenge" });
-  }
-});
-
-// Get challenges sent to me
-router.get("/challenges/received", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const challenges = await Challenge.find({
-      "recipients.user": req.user._id
-    })
-    .populate("creator")
-    .populate("recipients.user");
-    
-    res.send(challenges);
-  } catch (err) {
-    console.error("Error getting received challenges:", err);
-    res.status(500).send({ error: "Error getting received challenges" });
-  }
-});
-
-// Get challenges I've sent
-router.get("/challenges/sent", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const challenges = await Challenge.find({
-      creator: req.user._id
-    })
-    .populate("creator")
-    .populate("recipients.user");
-    
-    res.send(challenges);
-  } catch (err) {
-    console.error("Error getting sent challenges:", err);
-    res.status(500).send({ error: "Error getting sent challenges" });
-  }
-});
-
-router.post("/challenges/:challengeId/status", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const { status } = req.body;
-    if (!["accepted", "declined", "completed"].includes(status)) {
-      return res.status(400).send({ error: "Invalid status" });
-    }
-
-    const challenge = await Challenge.findById(req.params.challengeId);
-    if (!challenge) {
-      return res.status(404).send({ error: "Challenge not found" });
-    }
-
-    // Find the recipient entry for the current user
-    const recipientEntry = challenge.recipients.find(
-      r => r.user.toString() === req.user._id.toString()
-    );
-
-    if (!recipientEntry) {
-      return res.status(403).send({ error: "Not authorized to update this challenge" });
-    }
-
-    // Update the status
-    recipientEntry.status = status;
-    await challenge.save();
-
-    // Populate the challenge data
-    await challenge.populate("recipients.user creator");
-
-    // Notify the challenge creator
-    const creatorSocket = socketManager.getSocketFromUserID(challenge.creator._id);
-    if (creatorSocket) {
-      creatorSocket.emit("challenge", {
-        type: "status_update",
-        challenge: challenge,
-        updatedBy: req.user._id,
-        newStatus: status
-      });
-    }
-
-    res.send(challenge);
-  } catch (err) {
-    console.error("Error updating challenge status:", err);
-    res.status(500).send({ error: "Failed to update challenge status" });
-  }
-});
-
-// Get challenges shared with the user
-router.get("/challenges/shared", auth.ensureLoggedIn, async (req, res) => {
-  try {
-    const challenges = await Challenge.find({
-      "recipients.user": req.user._id
-    })
-      .populate("creator", "name")
-      .sort({ createdAt: -1 });
-    res.send(challenges);
-  } catch (err) {
-    console.error("Error getting shared challenges:", err);
-    res.status(500).send({ error: "Could not get shared challenges" });
-  }
-});
-
-// Admin endpoint to clear all posts
-router.post("/admin/clear-posts", async (req, res) => {
-  try {
-    // Clear all posts
-    await Post.deleteMany({});
-    console.log("All posts cleared successfully");
-    res.send({ message: "All posts cleared successfully" });
-  } catch (err) {
-    console.error("Error clearing posts:", err);
-    res.status(500).send({ error: "Failed to clear posts" });
   }
 });
 
