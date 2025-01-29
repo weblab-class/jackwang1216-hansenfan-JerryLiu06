@@ -20,17 +20,61 @@ try {
 console.log("OpenAI API Key:", "Present");
 
 const calculatePersonalizedPoints = (challenge, userPreferences) => {
-  // Default to medium difficulty if no preferences exist
-  if (!userPreferences) return 5;
+  // Default points if no preferences exist
+  if (!userPreferences) return 10;
 
-  // Use average enjoyment level to gauge comfort (1-5 scale)
-  const comfortLevel = userPreferences.avgEnjoyment;
+  let points = 10; // Base points
 
-  // Invert the comfort level to get difficulty (1 = very enjoyable = easier, 5 = less enjoyable = harder)
-  const baseDifficulty = 6 - comfortLevel;
+  if (userPreferences.highlyRatedDescriptions && userPreferences.commonKeywords) {
+    // Convert challenge description and title to lowercase for comparison
+    const challengeText = (challenge.description + " " + challenge.title).toLowerCase();
 
-  // Scale to 1-10 range and add some randomness
-  const points = Math.max(1, Math.min(10, Math.round(baseDifficulty * 2 + Math.random() - 0.5)));
+    // Check if this type of challenge is familiar to the user
+    let familiarityScore = 0;
+
+    // Check against highly rated past challenges
+    for (const pastChallenge of userPreferences.highlyRatedDescriptions) {
+      const pastText = pastChallenge.toLowerCase();
+      // Use common keywords to detect similarity
+      const words = pastText.split(/\W+/).filter((word) => word.length > 3);
+      for (const word of words) {
+        if (challengeText.includes(word)) {
+          familiarityScore += 0.2; // Increment familiarity for each matching keyword
+        }
+      }
+    }
+
+    // Check against common keywords the user has experience with
+    userPreferences.commonKeywords.forEach((rating, keyword) => {
+      if (challengeText.includes(keyword.toLowerCase())) {
+        familiarityScore += (rating / 5) * 0.3; // More weight for keywords with high ratings
+      }
+    });
+
+    // Cap familiarity score at 1
+    familiarityScore = Math.min(familiarityScore, 1);
+
+    // Reduce points based on familiarity (up to 50% reduction)
+    points = points * (1 - familiarityScore * 0.5);
+  }
+
+  // Adjust based on challenge difficulty
+  switch (challenge.difficulty.toLowerCase()) {
+    case "hard":
+      points *= 1.5;
+      break;
+    case "easy":
+      points *= 0.8;
+      break;
+  }
+
+  // Adjust based on duration
+  const duration = parseInt(challenge.duration);
+  if (duration === 4) points *= 1.2;
+  if (duration === 7) points *= 1.4;
+
+  // Final adjustments
+  points = Math.round(Math.max(5, Math.min(15, points))); // Keep within 5-15 range
 
   return points;
 };
@@ -120,7 +164,21 @@ const analyzeUserPreferences = async (userId) => {
 
 // Track recently generated challenges to avoid repetition
 const recentChallenges = new Set();
-const MAX_RECENT_CHALLENGES = 50; // Keep track of last 50 challenges
+const MAX_RECENT_CHALLENGES = 50;
+
+// Define challenge categories to ensure variety
+const CHALLENGE_CATEGORIES = [
+  "Social Interaction",
+  "Personal Growth",
+  "Health & Wellness",
+  "Creativity",
+  "Learning",
+  "Adventure",
+  "Kindness",
+  "Professional Development",
+  "Cultural Experience",
+  "Environmental",
+];
 
 const generateChallenge = async (userId) => {
   if (!openai) {
@@ -132,33 +190,82 @@ const generateChallenge = async (userId) => {
 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are a challenge generator for an app called Boldly that helps users break out of their comfort zones.
-          Generate a challenge that:
-          1. Encourages users to try something new
-          2. Is specific and actionable
-          3. Can be completed within the time limit
-          4. Is safe and appropriate
-          5. Uses proper capitalization (especially the word "Challenge" should always be capitalized)
+    // Convert recent challenges to array for prompt
+    const recentChallengesList = Array.from(recentChallenges);
+
+    // Randomly select 2-3 categories to focus on
+    const numCategories = Math.floor(Math.random() * 2) + 2;
+    const selectedCategories = CHALLENGE_CATEGORIES.sort(() => Math.random() - 0.5).slice(
+      0,
+      numCategories
+    );
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are a challenge generator for an app called Boldly that helps users break out of their comfort zones.
+
+          Generate a UNIQUE challenge that:
+          1. Focuses on one or more of these categories: ${selectedCategories.join(", ")}
+          2. Is specific, actionable, and meaningfully different from these recent challenges: ${recentChallengesList.join(
+            ", "
+          )}
+          3. Encourages users to try something genuinely new and unexpected
+          4. Can be completed within the time limit
+          5. Is safe and appropriate
+          6. Uses proper capitalization (especially the word "Challenge" should always be capitalized)
+
+          Guidelines for uniqueness:
+          - Avoid similar themes or activities to recent challenges
+          - Create unexpected combinations of activities
+          - Think outside conventional comfort zone challenges
+          - Consider the season and current trends
+          - Add creative twists to common activities
 
           Format:
           {
-            "title": "X-Day: [Challenge Name] Challenge", // Always capitalize Challenge and use proper title case
+            "title": "X-Day: [Challenge Name] Challenge",
             "description": "[2-3 sentences describing the challenge]",
+            "category": "[One of the specified categories]",
             "difficulty": "Easy|Medium|Hard",
             "points": number between 5-15,
-            "duration": number of days between 1-7
-          }`
-        }
-      ],
-      temperature: 0.8,
+            "duration": 1 day, 4 days, or 7 days
+          }`,
+      },
+    ];
+
+    console.log("Making OpenAI API call with messages:", JSON.stringify(messages, null, 2));
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: messages,
+      temperature: 1.0,
     });
 
-    const challenge = JSON.parse(response.choices[0].message.content);
+    console.log("OpenAI API Response:", JSON.stringify(response.choices[0], null, 2));
+
+    if (!response.choices || !response.choices[0] || !response.choices[0].message) {
+      throw new Error("Invalid response format from OpenAI");
+    }
+
+    let challenge;
+    try {
+      challenge = JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", response.choices[0].message.content);
+      throw new Error("Failed to parse challenge JSON from OpenAI response");
+    }
+
+    // Validate challenge format
+    if (
+      !challenge.title ||
+      !challenge.description ||
+      !challenge.difficulty ||
+      !challenge.duration
+    ) {
+      console.error("Invalid challenge format:", challenge);
+      throw new Error("Challenge missing required fields");
+    }
 
     // Add to recent challenges and maintain max size
     recentChallenges.add(challenge.title);
@@ -171,7 +278,8 @@ const generateChallenge = async (userId) => {
     return challenge;
   } catch (err) {
     console.error("Error generating challenge:", err);
-    throw err;
+    console.error("Error details:", err.response?.data || err.message);
+    throw new Error(`Failed to generate challenge: ${err.message}`);
   }
 };
 
