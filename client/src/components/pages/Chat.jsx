@@ -470,7 +470,6 @@ const Chat = () => {
                       </div>
                       <div>
                         <h2 className="text-lg font-medium text-white">{selectedUser.name}</h2>
-                        <p className="text-sm text-gray-400">Online</p>
                       </div>
                     </div>
                   </div>

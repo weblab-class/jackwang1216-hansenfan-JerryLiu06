@@ -488,8 +488,8 @@ router.post("/challenges/:challengeId/feedback", auth.ensureLoggedIn, async (req
     });
 
     // Update aggregated metrics
-    const ratings = challenge.userRatings.map(r => r.rating);
-    const timeSpent = challenge.userRatings.map(r => r.timeSpent);
+    const ratings = challenge.userRatings.map((r) => r.rating);
+    const timeSpent = challenge.userRatings.map((r) => r.timeSpent);
     challenge.averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
     challenge.averageTimeSpent = timeSpent.reduce((a, b) => a + b, 0) / timeSpent.length;
     challenge.totalAttempts = challenge.userRatings.length;

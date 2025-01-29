@@ -22,12 +22,12 @@ const MessageSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ["text", "challenge"],
-    default: "text"
+    default: "text",
   },
   challenge: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Challenge"
-  }
+    ref: "Challenge",
+  },
 });
 
 module.exports = mongoose.model("message", MessageSchema);
