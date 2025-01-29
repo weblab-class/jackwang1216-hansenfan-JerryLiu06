@@ -32,6 +32,21 @@ const InteractiveLogo = ({ src, alt, className }) => {
       onMouseMove={handleMouseMove}
       style={{ width: 'fit-content' }}
     >
+      <style>
+        {`
+          @keyframes float {
+            0% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-10px);
+            }
+            100% {
+              transform: translateY(0px);
+            }
+          }
+        `}
+      </style>
       <div
         className="absolute pointer-events-none"
         style={{
@@ -45,7 +60,14 @@ const InteractiveLogo = ({ src, alt, className }) => {
           transition: 'opacity 0.3s ease',
         }}
       />
-      <img src={src} alt={alt} className={className} />
+      <img 
+        src={src} 
+        alt={alt} 
+        className={className}
+        style={{
+          animation: 'float 3s ease-in-out infinite',
+        }}
+      />
     </div>
   );
 };
