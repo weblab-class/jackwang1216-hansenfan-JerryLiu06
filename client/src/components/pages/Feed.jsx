@@ -81,7 +81,6 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
-  const [comments, setComments] = useState(post.comments || []);
   const formattedDate = new Date(post.timestamp).toLocaleDateString();
   const isLiked = post.likes && post.likes.includes(userId);
 
@@ -89,21 +88,11 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
     if (isLiking || isLiked) return;
     setIsLiking(true);
     
-    // Optimistically update the UI
-    const updatedLikes = [...(post.likes || []), userId];
-    post.likes = updatedLikes; // Update the post object directly
-    if (onLike) onLike(post._id, updatedLikes);
-    
     try {
       const response = await apiPost(`/api/posts/${post._id}/like`);
-      // Server response will confirm the update
-      post.likes = response.likes; // Update the post object with server response
       if (onLike) onLike(post._id, response.likes);
     } catch (err) {
       console.error("Error liking post:", err);
-      // Revert on error
-      post.likes = post.likes.filter(id => id !== userId); // Remove the optimistic like
-      if (onLike) onLike(post._id, post.likes);
     } finally {
       setIsLiking(false);
     }
@@ -116,7 +105,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
     setIsCommenting(true);
     try {
       const response = await apiPost(`/api/posts/${post._id}/comment`, { content: newComment });
-      setComments(response.comments);
+      post.comments = response.comments; // Update post's comments directly
       if (onComment) onComment(post._id, response.comments);
       setNewComment("");
     } catch (err) {
@@ -228,7 +217,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                 <button
                   type="submit"
                   disabled={isCommenting || !newComment.trim()}
-                  className={`px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors ${
+                  className={`px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity ${
                     isCommenting || !newComment.trim() ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
@@ -238,7 +227,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
 
               {/* Comments List */}
               <div className="space-y-3">
-                {comments.map((comment, index) => (
+                {post.comments && post.comments.map((comment, index) => (
                   <div key={index} className="flex space-x-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
                       {comment.creator_name[0]}
@@ -287,9 +276,10 @@ const ImageModal = ({ imageUrl, onClose }) => {
           onClick={(e) => e.stopPropagation()}
           style={{ maxHeight: "calc(100vh - 2rem)" }}
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-100 group-hover/image:from-black/50 group-hover/image:opacity-100 transition-all duration-300" />
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+          className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 hover:scale-110 transition-all duration-300 transform"
         >
           <X className="w-6 h-6" />
         </button>
@@ -582,11 +572,7 @@ const Feed = () => {
   const handleNewPost = async (post) => {
     try {
       const newPost = await apiPost("/api/post", post);
-      // Immediately update the UI with the new post
-      setPosts((currentPosts) => {
-        const updatedPosts = [newPost, ...currentPosts];
-        return updatedPosts;
-      });
+      setPosts((currentPosts) => [newPost, ...currentPosts]);
 
       // If this post was for a challenge, award points
       if (post.challenge) {
@@ -602,14 +588,8 @@ const Feed = () => {
   };
 
   const handleLike = (postId, newLikes) => {
-    // Update the posts state immediately
     setPosts((currentPosts) =>
-      currentPosts.map((post) => {
-        if (post._id === postId) {
-          return { ...post, likes: newLikes };
-        }
-        return post;
-      })
+      currentPosts.map((post) => (post._id === postId ? { ...post, likes: newLikes } : post))
     );
   };
 
