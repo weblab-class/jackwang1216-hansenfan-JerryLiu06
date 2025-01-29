@@ -493,9 +493,8 @@ const Feed = () => {
 
   const handleNewPost = async (post) => {
     try {
-      await apiPost("/api/post", post);
-      setPage(0); // Reset to first page
-      loadPosts(); // Reload posts from beginning
+      const newPost = await apiPost("/api/post", post);
+      setPosts((currentPosts) => [newPost, ...currentPosts]); // Add new post to the beginning of the list
     } catch (err) {
       console.error("Error creating post:", err);
     }
