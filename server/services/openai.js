@@ -144,7 +144,7 @@ const generateChallenge = async (userId) => {
           3. Can be completed within the time limit
           4. Is safe and appropriate
           5. Uses proper capitalization (especially the word "Challenge" should always be capitalized)
-          
+
           Format:
           {
             "title": "X-Day: [Challenge Name] Challenge", // Always capitalize Challenge and use proper title case
@@ -155,7 +155,8 @@ const generateChallenge = async (userId) => {
           }`
         }
       ],
-      temperature: 0.7,
+      temperature: 1.6,
+      max_tokens: 2048,
     });
 
     const challenge = JSON.parse(response.choices[0].message.content);
