@@ -177,7 +177,7 @@ ${Array.from(userPreferences.commonKeywords.entries())
           content: `Generate a ${difficulty.toLowerCase()} difficulty challenge. The response should be in JSON format with title, description, and challengeType fields.`,
         },
       ],
-      temperature: 0.8,
+      temperature: 1.0,
     });
 
     const response = completion.choices[0].message.content;
