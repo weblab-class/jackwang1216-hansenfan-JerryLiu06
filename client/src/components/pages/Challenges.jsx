@@ -12,13 +12,18 @@ const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) =>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
-            <span className={`text-sm px-2 py-1 rounded-lg ${
-              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-              "bg-red-500/10 text-red-400"
-            }`}>
-              {challenge.difficulty}
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
+                {challenge.points} pts
+              </span>
+              <span className={`text-sm px-2 py-1 rounded-lg ${
+                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+                "bg-red-500/10 text-red-400"
+              }`}>
+                {challenge.difficulty}
+              </span>
+            </div>
           </div>
 
           <p className="text-gray-400 mb-4">{challenge.description}</p>
@@ -26,7 +31,6 @@ const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) =>
           <div className="flex items-center space-x-4 text-sm text-gray-400">
             <div className="flex items-center">
               <Trophy className="w-4 h-4 mr-1" />
-              <span>{challenge.points} pts</span>
             </div>
           </div>
         </div>
@@ -93,17 +97,18 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose, isSharedChalle
           </div>
 
           <div className="flex items-center space-x-4 text-sm text-gray-400">
-            <div className="flex items-center">
-              <Trophy className="w-4 h-4 mr-1" />
-              <span>{challenge.points} pts</span>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
+                {challenge.points} pts
+              </span>
+              <span className={`px-2 py-1 rounded-lg ${
+                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+                "bg-red-500/10 text-red-400"
+              }`}>
+                {challenge.difficulty}
+              </span>
             </div>
-            <span className={`text-sm px-2 py-1 rounded-lg ${
-              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-              "bg-red-500/10 text-red-400"
-            }`}>
-              {challenge.difficulty}
-            </span>
           </div>
         </div>
 
@@ -692,19 +697,23 @@ const Challenges = ({ userId }) => {
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
-                            <span className={`text-sm px-2 py-1 rounded-lg ${
-                              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-                              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-                              "bg-red-500/10 text-red-400"
-                            }`}>
-                              {challenge.difficulty}
-                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
+                                {challenge.points} pts
+                              </span>
+                              <span className={`text-sm px-2 py-1 rounded-lg ${
+                                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+                                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+                                "bg-red-500/10 text-red-400"
+                              }`}>
+                                {challenge.difficulty}
+                              </span>
+                            </div>
                           </div>
                           <p className="text-gray-400 mb-4">{challenge.description}</p>
                           <div className="flex items-center space-x-4 text-sm text-gray-400">
                             <div className="flex items-center">
                               <Trophy className="w-4 h-4 mr-1" />
-                              <span>{challenge.points} pts</span>
                             </div>
                           </div>
                         </div>
