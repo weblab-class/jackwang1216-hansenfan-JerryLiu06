@@ -45,8 +45,6 @@ mongoose.set("strictQuery", false);
 // connect to mongodb
 mongoose
   .connect(mongoConnectionURL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     dbName: databaseName,
   })
   .then(() => console.log("Connected to MongoDB"))
