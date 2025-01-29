@@ -22,22 +22,22 @@ const Tutorial = () => {
     {
       title: "Welcome to Boldly!",
       content:
-        "Boldly is your personal challenge platform that helps you step out of your comfort zone and grow through exciting daily challenges.",
+        "Boldly is your social challenge platform that helps you step out of your comfort zone. Complete challenges, earn points, and share your journey with others!",
     },
     {
-      title: "Getting Started",
+      title: "Daily Challenges",
       content:
-        "Click the 'Generate Challenge' button to receive your first challenge. You can generate multiple challenges and choose the one that resonates with you most.",
+        "Generate personalized challenges of varying difficulty levels. Each challenge comes with points to reward your growth.",
     },
     {
-      title: "Select Your Challenge",
+      title: "Share Your Journey",
       content:
-        "Once you've generated some challenges, they'll appear in the dropdown menu. Click 'Select a Challenge' to choose from your generated options.",
+        "After completing a challenge, share your experience with photos and stories. Your posts will inspire others and help build a supportive community of growth-minded individuals.",
     },
     {
-      title: "Complete & Share",
+      title: "Collaborate & Connect",
       content:
-        "After completing your challenge, share your experience with the community! Upload photos and describe how it went to inspire others.",
+        "Share challenges with friends and see what others are working on. Give feedback on completed challenges to help improve the experience for everyone. Track your progress on the leaderboard!",
     },
   ];
 
