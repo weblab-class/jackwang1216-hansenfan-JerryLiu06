@@ -122,7 +122,7 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
   if (!openai) {
     throw new Error("OpenAI API key not configured");
   }
-  
+
   try {
     console.log("Generating challenge with difficulty:", difficulty);
 
