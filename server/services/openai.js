@@ -147,9 +147,6 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
     ];
 
     let systemPrompt =
-<<<<<<< Updated upstream
-      "Generate a creative and engaging challenge that pushes people out of their comfort zone while being safe and appropriate. The challenge duration should be either 1-Day (Easy), 3-Day (Medium), or 7-Day (Hard). The title MUST start with the duration (e.g., '1-Day: [Challenge Name]', '3-Day: [Challenge Name]', or '7-Day: [Challenge Name]'). Make sure to also mention the duration in the challenge description.";
-=======
       "Generate a unique and creative challenge that pushes people out of their comfort zone while being safe and appropriate. Follow these guidelines:\n" +
       "1. The challenge should be specific, actionable, and measurable\n" +
       "2. Avoid generic or commonly repeated challenges\n" +
@@ -162,7 +159,6 @@ const generateChallenge = async (difficulty = "Intermediate", userId = null) => 
       challengeCategories.join(", ") +
       "\n\nRecently generated challenges to AVOID similarity with:\n" +
       Array.from(recentChallenges).slice(0, 3).map(title => `- ${title}`).join("\n");
->>>>>>> Stashed changes
 
     if (userPreferences) {
       systemPrompt += `\n\nConsider the following user preferences:
@@ -208,17 +204,10 @@ ${Array.from(userPreferences.commonKeywords.entries())
         {
           role: "user",
           content: `Generate a ${difficulty.toLowerCase()} difficulty challenge with the following duration:
-<<<<<<< Updated upstream
-${difficulty === "Easy" ? "1-Day" : difficulty === "Medium" ? "3-Day" : "7-Day"}.
-The response should be in JSON format with title (must start with the duration), description, and challengeType fields.
+${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
+The response should be in JSON format with title, description, and challengeType fields.
 Make sure to explicitly mention the duration in both the title and description.
 Example title format: "1-Day: Practice Public Speaking", "3-Day: Learn a New Recipe", "7-Day: Daily Meditation"`,
-=======
-${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
-The response should be in JSON format with title, description, challengeType (one of: ${challengeCategories.join(", ")}) fields.
-Make sure to explicitly mention the duration in the description.
-The challenge should be significantly different from recently generated challenges.`,
->>>>>>> Stashed changes
         },
       ],
       temperature: 1.2, // Increased for more creativity
