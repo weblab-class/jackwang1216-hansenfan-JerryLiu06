@@ -339,8 +339,8 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
 
         if (preSelectedChallenge) {
           const challenge = challenges.find((c) => c._id === preSelectedChallenge);
-          if (!challenge) {
-            console.warn("Pre-selected challenge not found:", preSelectedChallenge);
+          if (!challenge || challenge.pointsAwarded) {
+            console.warn("Pre-selected challenge not found or points already awarded:", preSelectedChallenge);
             setSelectedChallenge("");
           }
         }
@@ -351,7 +351,7 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
       }
     };
     loadChallenges();
-  }, []);
+  }, [preSelectedChallenge]);
 
   const convertToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -411,11 +411,13 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
                   required
                 >
                   <option value="">Select a challenge</option>
-                  {challenges.map((challenge) => (
-                    <option key={challenge._id} value={challenge._id}>
-                      {challenge.title} {challenge.completed ? "✓" : "⌛️"}
-                    </option>
-                  ))}
+                  {challenges
+                    .filter((challenge) => !challenge.pointsAwarded)
+                    .map((challenge) => (
+                      <option key={challenge._id} value={challenge._id}>
+                        {challenge.title} {challenge.completed ? "✓" : "⌛️"}
+                      </option>
+                    ))}
                 </select>
               </div>
               {!selectedChallenge && content.trim() && (
