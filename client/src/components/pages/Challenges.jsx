@@ -23,12 +23,6 @@ const ChallengeCard = ({ challenge, onComplete, onShare }) => {
               <Trophy className="w-4 h-4 mr-1" />
               <span>{challenge.points} pts</span>
             </div>
-            {challenge.deadline && (
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -77,12 +71,6 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
               <Trophy className="w-4 h-4 mr-1" />
               <span>{challenge.points} pts</span>
             </div>
-            {challenge.deadline && (
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>{new Date(challenge.deadline).toLocaleDateString()}</span>
-              </div>
-            )}
           </div>
         </div>
 
