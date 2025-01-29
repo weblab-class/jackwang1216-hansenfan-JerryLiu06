@@ -838,14 +838,17 @@ router.post("/challenges/:challengeId/decline", auth.ensureLoggedIn, async (req,
 // Get user profile data
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
+    console.log("Getting profile data for user:", req.user._id);
     // Get user data
     const user = await User.findById(req.user._id).populate("friends").populate("friendRequests");
+    console.log("Found user:", user);
 
     // Get completed challenges
     const completedChallenges = await Challenge.find({
       creator: req.user._id,
       completed: true,
     });
+    console.log("Found completed challenges:", completedChallenges.length);
 
     // Calculate current streak
     const today = new Date();

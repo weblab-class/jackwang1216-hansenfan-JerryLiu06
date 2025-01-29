@@ -71,7 +71,9 @@ const Profile = () => {
 
   const loadProfile = async () => {
     try {
+      console.log("Fetching profile data...");
       const profileData = await get("/api/profile");
+      console.log("Received profile data:", profileData);
       setProfile(profileData);
     } catch (err) {
       console.error("Failed to load profile:", err);
