@@ -713,6 +713,91 @@ router.post("/challenges/reset/:userId", async (req, res) => {
   }
 });
 
+// Accept a generated challenge
+router.post("/challenges/accept", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const { challenge } = req.body;
+    if (!challenge) {
+      return res.status(400).send({ error: "Challenge data is required" });
+    }
+
+    const newChallenge = new Challenge({
+      title: challenge.title,
+      description: challenge.description,
+      points: challenge.points,
+      difficulty: challenge.difficulty,
+      creator: req.user._id,
+      deadline: challenge.deadline,
+    });
+
+    await newChallenge.save();
+    res.send(newChallenge);
+  } catch (err) {
+    console.error("Error accepting challenge:", err);
+    res.status(500).send({ error: "Failed to accept challenge" });
+  }
+});
+
+// Accept a shared challenge
+router.post("/challenges/:challengeId/accept", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Create a new challenge for the accepting user
+    const newChallenge = new Challenge({
+      title: challenge.title,
+      description: challenge.description,
+      points: challenge.points,
+      difficulty: challenge.difficulty,
+      creator: req.user._id,
+      deadline: challenge.deadline,
+    });
+
+    await newChallenge.save();
+
+    // Update the original challenge's recipient status
+    const recipientIndex = challenge.recipients.findIndex(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+    if (recipientIndex !== -1) {
+      challenge.recipients[recipientIndex].status = "accepted";
+      await challenge.save();
+    }
+
+    res.send(newChallenge);
+  } catch (err) {
+    console.error("Error accepting challenge:", err);
+    res.status(500).send({ error: "Failed to accept challenge" });
+  }
+});
+
+// Decline a shared challenge
+router.post("/challenges/:challengeId/decline", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Update the recipient's status to declined
+    const recipientIndex = challenge.recipients.findIndex(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+    if (recipientIndex !== -1) {
+      challenge.recipients[recipientIndex].status = "declined";
+      await challenge.save();
+    }
+
+    res.send({ message: "Challenge declined successfully" });
+  } catch (err) {
+    console.error("Error declining challenge:", err);
+    res.status(500).send({ error: "Failed to decline challenge" });
+  }
+});
+
 // Get user profile data
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {

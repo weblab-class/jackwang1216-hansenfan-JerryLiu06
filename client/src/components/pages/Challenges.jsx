@@ -4,7 +4,7 @@ import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X, Share2 } f
 import NavBar from "../modules/NavBar.jsx";
 import { socket } from "../../client-socket";
 
-const ChallengeCard = ({ challenge, onComplete, onShare }) => {
+const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) => {
   return (
     <div className="relative group h-full">
       <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
@@ -33,21 +33,40 @@ const ChallengeCard = ({ challenge, onComplete, onShare }) => {
 
         <div className="mt-6">
           <div className="flex items-center justify-end space-x-2">
-            <button
-              onClick={() => onShare(challenge)}
-              className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-white/5 text-white hover:bg-white/10 transition-colors"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </button>
-            <button
-              onClick={() => onComplete(challenge)}
-              disabled={challenge.completed}
-              className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{challenge.completed ? "Completed" : "Complete"}</span>
-            </button>
+            {!isSharedChallenge && (
+              <button
+                onClick={() => onShare(challenge)}
+                className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-white/5 text-white hover:bg-white/10 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                <span>Share</span>
+              </button>
+            )}
+            {isSharedChallenge ? (
+              <>
+                <button
+                  onClick={() => onComplete(challenge)}
+                  className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={() => onComplete(challenge)}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+                >
+                  Accept Challenge
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => onComplete(challenge)}
+                disabled={challenge.completed}
+                className="px-4 py-2 rounded-lg flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{challenge.completed ? "Completed" : "Complete"}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -55,7 +74,7 @@ const ChallengeCard = ({ challenge, onComplete, onShare }) => {
   );
 };
 
-const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
+const ChallengeModal = ({ challenge, onAccept, onReject, onClose, isSharedChallenge }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
@@ -63,7 +82,9 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-2xl font-bold text-white mb-4">New Challenge Generated!</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">
+          {isSharedChallenge ? "Challenge Details" : "New Challenge Generated!"}
+        </h2>
 
         <div className="space-y-4 mb-6">
           <div>
@@ -76,23 +97,49 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
               <Trophy className="w-4 h-4 mr-1" />
               <span>{challenge.points} pts</span>
             </div>
+            <span className={`text-sm px-2 py-1 rounded-lg ${
+              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+              "bg-red-500/10 text-red-400"
+            }`}>
+              {challenge.difficulty}
+            </span>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onReject}
-            className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
-          >
-            Reject
-          </button>
-          <button
-            onClick={onAccept}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
-          >
-            Accept Challenge
-          </button>
-        </div>
+        {isSharedChallenge && !challenge.status && (
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onReject}
+              className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              Decline
+            </button>
+            <button
+              onClick={onAccept}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+            >
+              Accept Challenge
+            </button>
+          </div>
+        )}
+
+        {!isSharedChallenge && (
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onReject}
+              className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+            >
+              Reject
+            </button>
+            <button
+              onClick={onAccept}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+            >
+              Accept Challenge
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -389,6 +436,7 @@ const Challenges = ({ userId }) => {
     feedback: "",
   });
   const [shareChallengeModal, setShareChallengeModal] = useState(null);
+  const [selectedSharedChallenge, setSelectedSharedChallenge] = useState(null);
 
   useEffect(() => {
     loadChallenges();
@@ -450,9 +498,15 @@ const Challenges = ({ userId }) => {
     }
   };
 
-  const handleAcceptChallenge = () => {
-    setChallenges((prev) => [newChallenge, ...prev]);
-    setNewChallenge(null);
+  const handleAcceptChallenge = async () => {
+    try {
+      const response = await post("/api/challenges/accept", { challenge: newChallenge });
+      setChallenges((prev) => [response, ...prev]);
+      setNewChallenge(null);
+    } catch (err) {
+      console.error("Failed to accept challenge:", err);
+      setError("Failed to accept challenge. Please try again.");
+    }
   };
 
   const handleRejectChallenge = () => {
@@ -461,16 +515,26 @@ const Challenges = ({ userId }) => {
 
   const handleComplete = async (challenge) => {
     try {
-      // First complete the challenge
-      const updatedChallenge = await post(`/api/challenges/${challenge._id}/complete`);
-      if (updatedChallenge) {
-        setSelectedChallenge(challenge);
-        setShowFeedbackModal(true);
-        await loadChallenges(); // Refresh the challenges list
+      if (activeTab === "shared") {
+        // Handle accepting/declining shared challenge
+        const action = window.confirm("Do you want to accept this challenge?") ? "accept" : "decline";
+        const response = await post(`/api/challenges/${challenge._id}/${action}`);
+        if (action === "accept") {
+          setChallenges((prev) => [response, ...prev]);
+        }
+        setSharedChallenges((prev) => prev.filter((c) => c._id !== challenge._id));
+      } else {
+        // Handle completing own challenge
+        const updatedChallenge = await post(`/api/challenges/${challenge._id}/complete`);
+        if (updatedChallenge) {
+          setSelectedChallenge(challenge);
+          setShowFeedbackModal(true);
+          await loadChallenges();
+        }
       }
     } catch (err) {
-      console.log(err);
-      setError("Failed to complete challenge");
+      console.error(err);
+      setError("Failed to process challenge");
     }
   };
 
@@ -499,6 +563,35 @@ const Challenges = ({ userId }) => {
 
   const handleCloseShareChallengeModal = () => {
     setShareChallengeModal(null);
+  };
+
+  const handleViewDetails = (challenge, isShared) => {
+    if (isShared) {
+      setSelectedSharedChallenge(challenge);
+    }
+  };
+
+  const handleAcceptSharedChallenge = async (challenge) => {
+    try {
+      const response = await post(`/api/challenges/${challenge._id}/accept`);
+      setChallenges((prev) => [response, ...prev]);
+      setSharedChallenges((prev) => prev.filter((c) => c._id !== challenge._id));
+      setSelectedSharedChallenge(null);
+    } catch (err) {
+      console.error("Failed to accept challenge:", err);
+      setError("Failed to accept challenge. Please try again.");
+    }
+  };
+
+  const handleDeclineSharedChallenge = async (challenge) => {
+    try {
+      await post(`/api/challenges/${challenge._id}/decline`);
+      setSharedChallenges((prev) => prev.filter((c) => c._id !== challenge._id));
+      setSelectedSharedChallenge(null);
+    } catch (err) {
+      console.error("Failed to decline challenge:", err);
+      setError("Failed to decline challenge. Please try again.");
+    }
   };
 
   return (
@@ -530,6 +623,17 @@ const Challenges = ({ userId }) => {
             onAccept={handleAcceptChallenge}
             onReject={handleRejectChallenge}
             onClose={handleRejectChallenge}
+            isSharedChallenge={false}
+          />
+        )}
+
+        {selectedSharedChallenge && (
+          <ChallengeModal
+            challenge={selectedSharedChallenge}
+            onAccept={() => handleAcceptSharedChallenge(selectedSharedChallenge)}
+            onReject={() => handleDeclineSharedChallenge(selectedSharedChallenge)}
+            onClose={() => setSelectedSharedChallenge(null)}
+            isSharedChallenge={true}
           />
         )}
 
@@ -578,12 +682,34 @@ const Challenges = ({ userId }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeTab === "shared"
                 ? sharedChallenges.map((challenge) => (
-                    <ChallengeCard
+                    <div
                       key={challenge._id}
-                      challenge={challenge}
-                      onComplete={handleComplete}
-                      onShare={handleShareChallenge}
-                    />
+                      className="relative group h-full cursor-pointer"
+                      onClick={() => handleViewDetails(challenge, true)}
+                    >
+                      <div className="absolute -inset-px bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl opacity-70 blur group-hover:opacity-100 transition-opacity" />
+                      <div className="relative h-full bg-[#1C1F26] rounded-xl p-6 flex flex-col">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
+                            <span className={`text-sm px-2 py-1 rounded-lg ${
+                              challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
+                              challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
+                              "bg-red-500/10 text-red-400"
+                            }`}>
+                              {challenge.difficulty}
+                            </span>
+                          </div>
+                          <p className="text-gray-400 mb-4">{challenge.description}</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-400">
+                            <div className="flex items-center">
+                              <Trophy className="w-4 h-4 mr-1" />
+                              <span>{challenge.points} pts</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ))
                 : challenges
                     .filter((challenge) =>
@@ -595,6 +721,7 @@ const Challenges = ({ userId }) => {
                         challenge={challenge}
                         onComplete={handleComplete}
                         onShare={handleShareChallenge}
+                        isSharedChallenge={false}
                       />
                     ))}
             </div>

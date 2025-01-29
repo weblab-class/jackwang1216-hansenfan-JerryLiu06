@@ -187,24 +187,30 @@ const Chat = () => {
               </div>
             </div>
 
-            {challenge.status === "pending" && (
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => handleAction(onReject)}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Decline Challenge
-                </button>
-                <button
-                  onClick={() => handleAction(onAccept)}
-                  disabled={loading}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
-                >
-                  Accept Challenge
-                </button>
+            <div className="pt-4 border-t border-white/10">
+              <div className="text-sm text-gray-400 mb-4">
+                Status: <span className="capitalize">{challenge.status || "pending"}</span>
               </div>
-            )}
+
+              {challenge.status === "pending" && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleAction(onReject)}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Decline Challenge
+                  </button>
+                  <button
+                    onClick={() => handleAction(onAccept)}
+                    disabled={loading}
+                    className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-all duration-200 disabled:opacity-50"
+                  >
+                    Accept Challenge
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -218,17 +224,50 @@ const Chat = () => {
       : "bg-white/5 text-white";
 
     const handleAcceptChallenge = async () => {
-      await post(`/api/challenges/${message.challenge._id}/status`, { status: "accepted" });
+      try {
+        const response = await post(`/api/challenges/${message.challenge._id}/accept`);
+        // Update the message's challenge status locally
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === message._id
+              ? {
+                  ...msg,
+                  challenge: {
+                    ...msg.challenge,
+                    status: "accepted",
+                  },
+                }
+              : msg
+          )
+        );
+      } catch (err) {
+        console.error("Failed to accept challenge:", err);
+      }
     };
 
     const handleRejectChallenge = async () => {
-      await post(`/api/challenges/${message.challenge._id}/status`, { status: "declined" });
+      try {
+        await post(`/api/challenges/${message.challenge._id}/decline`);
+        // Update the message's challenge status locally
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === message._id
+              ? {
+                  ...msg,
+                  challenge: {
+                    ...msg.challenge,
+                    status: "declined",
+                  },
+                }
+              : msg
+          )
+        );
+      } catch (err) {
+        console.error("Failed to decline challenge:", err);
+      }
     };
 
     if (message.type === "challenge" && message.challenge) {
-      const isPending = message.challenge.status === "pending";
-      const isRecipient = !isOwnMessage;
-
       return (
         <>
           <div className={`rounded-lg p-4 max-w-[80%] mb-2 ${bubbleClass}`}>
@@ -244,36 +283,33 @@ const Chat = () => {
                     {message.challenge.points} points • {message.challenge.difficulty}
                   </span>
                   <div className="flex items-center gap-2">
-                    {isPending && isRecipient ? (
+                    <button
+                      onClick={() => setShowChallengeModal(true)}
+                      className="text-sm px-3 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors"
+                    >
+                      View Details
+                    </button>
+                    {!isOwnMessage && message.challenge.status === "pending" && (
                       <>
                         <button
-                          onClick={() => handleRejectChallenge()}
+                          onClick={handleRejectChallenge}
                           className="text-sm px-3 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors"
                         >
                           Decline
                         </button>
                         <button
-                          onClick={() => handleAcceptChallenge()}
+                          onClick={handleAcceptChallenge}
                           className="text-sm px-3 py-1 rounded bg-purple-500 hover:bg-purple-600 transition-colors"
                         >
                           Accept
                         </button>
                       </>
-                    ) : (
-                      <button
-                        onClick={() => setShowChallengeModal(true)}
-                        className="text-sm px-3 py-1 rounded bg-white/10 hover:bg-white/20 transition-colors"
-                      >
-                        View Details
-                      </button>
                     )}
                   </div>
                 </div>
-                {!isPending && (
-                  <div className="mt-2 text-sm">
-                    Status: <span className="capitalize">{message.challenge.status}</span>
-                  </div>
-                )}
+                <div className="mt-2 text-sm">
+                  Status: <span className="capitalize">{message.challenge.status || "pending"}</span>
+                </div>
               </div>
             </div>
           </div>
