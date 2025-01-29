@@ -365,14 +365,17 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     if (!user.hasCompletedQuestionnaire) {
-      return res.status(400).send({ 
+      return res.status(400).send({
         error: "Please complete the initial questionnaire before generating challenges",
-        redirectTo: "/questionnaire"
+        redirectTo: "/questionnaire",
       });
     }
 
-    const challenge = await generateChallenge(req.body.difficulty || "Intermediate", user.userProfile);
-    
+    const challenge = await generateChallenge(
+      req.body.difficulty || "Intermediate",
+      user.userProfile
+    );
+
     const newChallenge = new Challenge({
       title: challenge.title,
       description: challenge.description,
@@ -444,6 +447,58 @@ router.get("/challenges/completed", auth.ensureLoggedIn, async (req, res) => {
   } catch (err) {
     console.error("Error getting completed challenges:", err);
     res.status(500).send({ error: "Failed to get completed challenges" });
+  }
+});
+
+// Delete all challenges for a user
+router.delete("/challenges/user/:userId", async (req, res) => {
+  try {
+    // Delete all challenges where the user is either the creator or a recipient
+    const result = await Challenge.deleteMany({
+      $or: [{ creator: req.params.userId }, { "recipients.user": req.params.userId }],
+    });
+
+    res.send({ msg: `Deleted ${result.deletedCount} challenges successfully` });
+  } catch (err) {
+    console.error("Error deleting challenges:", err);
+    res.status(500).send({ error: "Could not delete challenges" });
+  }
+});
+
+// Submit feedback for a completed challenge
+router.post("/challenges/:challengeId/feedback", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findOne({
+      _id: req.params.challengeId,
+      creator: req.user._id,
+    });
+
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Add the user's rating to the userRatings array
+    challenge.userRatings.push({
+      user: req.user._id,
+      rating: req.body.rating,
+      enjoymentLevel: req.body.enjoymentLevel,
+      productivityScore: req.body.productivityScore,
+      timeSpent: req.body.timeSpent,
+      feedback: req.body.feedback,
+    });
+
+    // Update aggregated metrics
+    const ratings = challenge.userRatings.map(r => r.rating);
+    const timeSpent = challenge.userRatings.map(r => r.timeSpent);
+    challenge.averageRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    challenge.averageTimeSpent = timeSpent.reduce((a, b) => a + b, 0) / timeSpent.length;
+    challenge.totalAttempts = challenge.userRatings.length;
+
+    await challenge.save();
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error submitting challenge feedback:", err);
+    res.status(500).send({ error: "Could not submit challenge feedback" });
   }
 });
 
@@ -566,9 +621,7 @@ router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
 // Get leaderboard data
 router.get("/leaderboard", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const users = await User.find({}, 'name points')
-      .sort({ points: -1 })
-      .limit(100);
+    const users = await User.find({}, "name points").sort({ points: -1 }).limit(100);
     res.send(users);
   } catch (err) {
     console.error("Error getting leaderboard data:", err);

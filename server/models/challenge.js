@@ -18,19 +18,21 @@ const ChallengeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",
   },
-  recipients: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user"
+  recipients: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+      status: {
+        type: String,
+        enum: ["pending", "accepted", "declined", "completed"],
+        default: "pending",
+      },
+      acceptedAt: Date,
+      completedAt: Date,
     },
-    status: {
-      type: String,
-      enum: ["pending", "accepted", "declined", "completed"],
-      default: "pending"
-    },
-    acceptedAt: Date,
-    completedAt: Date
-  }],
+  ],
   completed: {
     type: Boolean,
     default: false,

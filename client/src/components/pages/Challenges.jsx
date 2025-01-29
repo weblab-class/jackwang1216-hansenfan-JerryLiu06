@@ -60,21 +60,18 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white"
-        >
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
           <X className="w-5 h-5" />
         </button>
-        
+
         <h2 className="text-2xl font-bold text-white mb-4">New Challenge Generated!</h2>
-        
+
         <div className="space-y-4 mb-6">
           <div>
             <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
             <p className="text-gray-400">{challenge.description}</p>
           </div>
-          
+
           <div className="flex items-center space-x-4 text-sm text-gray-400">
             <div className="flex items-center">
               <Trophy className="w-4 h-4 mr-1" />
@@ -88,7 +85,7 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose }) => {
             )}
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-3">
           <button
             onClick={onReject}
@@ -132,20 +129,20 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
 
     // Only add the listener when the dropdown is open
     if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isDropdownOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       await post(`/api/challenges/${challenge._id}/share`, {
-        recipientIds: selectedUsers
+        recipientIds: selectedUsers,
       });
-      
+
       onClose();
     } catch (err) {
       console.error("Error sharing challenge:", err);
@@ -155,20 +152,18 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
   };
 
   const toggleUser = (userId) => {
-    setSelectedUsers(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
+    setSelectedUsers((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
   const getSelectedNames = () => {
     if (selectedUsers.length === 0) return "Select friends";
-    
+
     const selectedNames = selectedUsers
-      .map(id => friends.find(f => f._id === id)?.name)
+      .map((id) => friends.find((f) => f._id === id)?.name)
       .filter(Boolean);
-    
+
     if (selectedNames.length <= 2) {
       return selectedNames.join(", ");
     }
@@ -192,30 +187,39 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Share with Friends</label>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Share with Friends
+            </label>
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 flex justify-between items-center"
               >
-                <span className="truncate pr-8">
-                  {getSelectedNames()}
-                </span>
-                <svg 
-                  className={`w-5 h-5 transition-transform duration-200 ${isDropdownOpen ? 'transform rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
+                <span className="truncate pr-8">{getSelectedNames()}</span>
+                <svg
+                  className={`w-5 h-5 transition-transform duration-200 ${
+                    isDropdownOpen ? "transform rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </button>
-              
+
               {isDropdownOpen && (
                 <div className="absolute z-10 w-full mt-1 bg-[#1C1F26] border border-white/10 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {friends.length === 0 ? (
-                    <p className="text-gray-400 p-3">No friends found. Add some friends to share challenges!</p>
+                    <p className="text-gray-400 p-3">
+                      No friends found. Add some friends to share challenges!
+                    </p>
                   ) : (
                     friends.map((friend) => (
                       <div
@@ -249,6 +253,116 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <X className="w-5 h-5" />
+        </button>
+
+        <h2 className="text-2xl font-bold text-white mb-4">Challenge Completed!</h2>
+        <p className="text-gray-400 mb-6">Please provide feedback on this challenge.</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Rating</label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={feedback.rating}
+              onChange={(e) => setFeedback({ ...feedback, rating: parseInt(e.target.value) })}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Enjoyment Level</label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={feedback.enjoymentLevel}
+              onChange={(e) => setFeedback({ ...feedback, enjoymentLevel: parseInt(e.target.value) })}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Productivity Score</label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={feedback.productivityScore}
+              onChange={(e) => setFeedback({ ...feedback, productivityScore: parseInt(e.target.value) })}
+              className="w-full"
+            />
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Time Spent (minutes)</label>
+            <input
+              type="number"
+              min="0"
+              value={feedback.timeSpent}
+              onChange={(e) => setFeedback({ ...feedback, timeSpent: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Additional Feedback</label>
+            <textarea
+              value={feedback.feedback}
+              onChange={(e) => setFeedback({ ...feedback, feedback: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 h-24"
+              placeholder="Share your thoughts about this challenge..."
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            Skip
+          </button>
+          <button
+            onClick={onSubmit}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+          >
+            Submit Feedback
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -345,7 +459,7 @@ const Challenges = ({ userId }) => {
 
   const handleFeedbackSubmit = async () => {
     try {
-      await post(`/api/challenge/${selectedChallenge._id}/feedback`, feedback);
+      await post(`/api/challenges/${selectedChallenge._id}/feedback`, feedback);
       setShowFeedbackModal(false);
       setSelectedChallenge(null);
       setFeedback({
@@ -445,21 +559,8 @@ const Challenges = ({ userId }) => {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeTab === "shared" ? (
-                sharedChallenges.map((challenge) => (
-                  <ChallengeCard
-                    key={challenge._id}
-                    challenge={challenge}
-                    onComplete={handleComplete}
-                    onShare={handleShareChallenge}
-                  />
-                ))
-              ) : (
-                challenges
-                  .filter((challenge) =>
-                    activeTab === "available" ? !challenge.completed : challenge.completed
-                  )
-                  .map((challenge) => (
+              {activeTab === "shared"
+                ? sharedChallenges.map((challenge) => (
                     <ChallengeCard
                       key={challenge._id}
                       challenge={challenge}
@@ -467,13 +568,22 @@ const Challenges = ({ userId }) => {
                       onShare={handleShareChallenge}
                     />
                   ))
-              )}
+                : challenges
+                    .filter((challenge) =>
+                      activeTab === "available" ? !challenge.completed : challenge.completed
+                    )
+                    .map((challenge) => (
+                      <ChallengeCard
+                        key={challenge._id}
+                        challenge={challenge}
+                        onComplete={handleComplete}
+                        onShare={handleShareChallenge}
+                      />
+                    ))}
             </div>
 
-            {((activeTab === "available" &&
-              challenges.filter((c) => !c.completed).length === 0) ||
-              (activeTab === "completed" &&
-                challenges.filter((c) => c.completed).length === 0) ||
+            {((activeTab === "available" && challenges.filter((c) => !c.completed).length === 0) ||
+              (activeTab === "completed" && challenges.filter((c) => c.completed).length === 0) ||
               (activeTab === "shared" && sharedChallenges.length === 0)) &&
               !error && (
                 <div className="text-center py-12">
@@ -502,7 +612,17 @@ const Challenges = ({ userId }) => {
             feedback={feedback}
             setFeedback={setFeedback}
             onSubmit={handleFeedbackSubmit}
-            onClose={() => setShowFeedbackModal(false)}
+            onClose={() => {
+              setShowFeedbackModal(false);
+              setSelectedChallenge(null);
+              setFeedback({
+                rating: 5,
+                enjoymentLevel: 5,
+                productivityScore: 5,
+                timeSpent: 30,
+                feedback: "",
+              });
+            }}
           />
         )}
       </div>
