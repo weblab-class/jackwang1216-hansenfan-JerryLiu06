@@ -384,10 +384,25 @@ router.post("/message", auth.ensureLoggedIn, async (req, res) => {
 // Challenge-related endpoints
 router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
-    const challenges = await Challenge.find({ creator: req.user._id })
-      .populate("creator", "name")
-      .sort({ createdAt: -1 });
-    res.send(challenges);
+    // Get user's own challenges
+    const userChallenges = await Challenge.find({ creator: req.user._id });
+    
+    // Get shared challenges
+    const sharedChallenges = await Challenge.find({
+      _id: { $in: req.user.sharedChallenges || [] },
+    });
+
+    // Combine and remove duplicates by title
+    const allChallenges = [...userChallenges, ...sharedChallenges];
+    const uniqueChallenges = allChallenges.reduce((acc, current) => {
+      const x = acc.find(item => item.title === current.title);
+      if (!x) {
+        return acc.concat([current]);
+      }
+      return acc;
+    }, []);
+
+    res.send(uniqueChallenges);
   } catch (err) {
     console.error("Error getting challenges:", err);
     res.status(500).send({ error: "Could not get challenges" });

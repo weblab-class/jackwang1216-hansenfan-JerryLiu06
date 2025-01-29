@@ -335,10 +335,22 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
       try {
         setLoadingChallenge(true);
         const challenges = await get("/api/challenges");
-        setChallenges(challenges);
+        
+        // Remove duplicates by title
+        const uniqueChallenges = challenges.reduce((acc, current) => {
+          const x = acc.find(item => item.title === current.title);
+          if (!x) {
+            return acc.concat([current]);
+          } else {
+            console.log("Duplicate challenge found:", current.title);
+            return acc;
+          }
+        }, []);
+
+        setChallenges(uniqueChallenges);
 
         if (preSelectedChallenge) {
-          const challenge = challenges.find((c) => c._id === preSelectedChallenge);
+          const challenge = uniqueChallenges.find((c) => c._id === preSelectedChallenge);
           if (!challenge || challenge.pointsAwarded) {
             console.warn("Pre-selected challenge not found or points already awarded:", preSelectedChallenge);
             setSelectedChallenge("");
@@ -412,7 +424,7 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
                 >
                   <option value="">Select a challenge</option>
                   {challenges
-                    .filter((challenge) => !challenge.pointsAwarded)
+                    .filter(challenge => !challenge.pointsAwarded)
                     .map((challenge) => (
                       <option key={challenge._id} value={challenge._id}>
                         {challenge.title} {challenge.completed ? "✓" : "⌛️"}
