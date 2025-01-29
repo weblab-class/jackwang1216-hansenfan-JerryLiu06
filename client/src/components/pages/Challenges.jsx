@@ -467,6 +467,7 @@ const Challenges = ({ userId }) => {
     try {
       const data = await get("/api/challenges");
       setChallenges(data);
+      setNewChallenge(null); // Clear any pending new challenge when loading challenges
       setError(null);
     } catch (err) {
       console.error("Failed to load challenges:", err);
@@ -721,9 +722,13 @@ const Challenges = ({ userId }) => {
                     </div>
                   ))
                 : challenges
-                    .filter((challenge) =>
-                      activeTab === "active" ? !challenge.completed : challenge.completed
-                    )
+                    .filter((challenge) => {
+                      // Don't show challenges that are currently in the modal
+                      if (newChallenge && challenge.title === newChallenge.title) {
+                        return false;
+                      }
+                      return activeTab === "active" ? !challenge.completed : challenge.completed;
+                    })
                     .map((challenge) => (
                       <ChallengeCard
                         key={challenge._id}

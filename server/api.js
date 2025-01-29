@@ -416,17 +416,14 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
       user.userProfile
     );
 
-    const newChallenge = new Challenge({
+    // Send the challenge data without saving to database
+    res.send({
       title: challenge.title,
       description: challenge.description,
       points: challenge.points,
       difficulty: randomDuration.difficulty,
-      creator: req.user._id,
       deadline: new Date(Date.now() + randomDuration.days * 24 * 60 * 60 * 1000),
     });
-
-    await newChallenge.save();
-    res.send(newChallenge);
   } catch (err) {
     console.error("Error generating challenge:", err);
     res.status(500).send({ error: "Failed to generate challenge" });
@@ -721,6 +718,7 @@ router.post("/challenges/accept", auth.ensureLoggedIn, async (req, res) => {
       return res.status(400).send({ error: "Challenge data is required" });
     }
 
+    // Create and save the challenge only when accepted
     const newChallenge = new Challenge({
       title: challenge.title,
       description: challenge.description,
@@ -728,10 +726,16 @@ router.post("/challenges/accept", auth.ensureLoggedIn, async (req, res) => {
       difficulty: challenge.difficulty,
       creator: req.user._id,
       deadline: challenge.deadline,
+      completed: false,
+      createdAt: new Date(),
     });
 
     await newChallenge.save();
-    res.send(newChallenge);
+    
+    // Return the populated challenge
+    const populatedChallenge = await Challenge.findById(newChallenge._id)
+      .populate("creator", "name");
+    res.send(populatedChallenge);
   } catch (err) {
     console.error("Error accepting challenge:", err);
     res.status(500).send({ error: "Failed to accept challenge" });
