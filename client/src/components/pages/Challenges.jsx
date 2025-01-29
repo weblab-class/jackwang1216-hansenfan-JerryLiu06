@@ -296,7 +296,9 @@ const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) 
               min="1"
               max="5"
               value={feedback.enjoymentLevel}
-              onChange={(e) => setFeedback({ ...feedback, enjoymentLevel: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFeedback({ ...feedback, enjoymentLevel: parseInt(e.target.value) })
+              }
               className="w-full"
             />
             <div className="flex justify-between text-sm text-gray-400">
@@ -309,13 +311,17 @@ const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Productivity Score</label>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Productivity Score
+            </label>
             <input
               type="range"
               min="1"
               max="5"
               value={feedback.productivityScore}
-              onChange={(e) => setFeedback({ ...feedback, productivityScore: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFeedback({ ...feedback, productivityScore: parseInt(e.target.value) })
+              }
               className="w-full"
             />
             <div className="flex justify-between text-sm text-gray-400">
@@ -328,7 +334,9 @@ const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Time Spent (minutes)</label>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Time Spent (minutes)
+            </label>
             <input
               type="number"
               min="0"
@@ -339,7 +347,9 @@ const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">Additional Feedback</label>
+            <label className="block text-sm font-medium text-gray-400 mb-1">
+              Additional Feedback
+            </label>
             <textarea
               value={feedback.feedback}
               onChange={(e) => setFeedback({ ...feedback, feedback: e.target.value })}
@@ -374,7 +384,7 @@ const Challenges = ({ userId }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("available");
+  const [activeTab, setActiveTab] = useState("active");
   const [newChallenge, setNewChallenge] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedChallenge, setSelectedChallenge] = useState(null);
@@ -518,13 +528,13 @@ const Challenges = ({ userId }) => {
 
         <div className="mb-6 flex space-x-4 border-b border-white/10">
           <button
-            onClick={() => setActiveTab("available")}
+            onClick={() => setActiveTab("active")}
             className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-              activeTab === "available" ? "text-white" : "text-gray-400 hover:text-white"
+              activeTab === "active" ? "text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            Available
-            {activeTab === "available" && (
+            Active
+            {activeTab === "active" && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-500 to-pink-500" />
             )}
           </button>
@@ -570,7 +580,7 @@ const Challenges = ({ userId }) => {
                   ))
                 : challenges
                     .filter((challenge) =>
-                      activeTab === "available" ? !challenge.completed : challenge.completed
+                      activeTab === "active" ? !challenge.completed : challenge.completed
                     )
                     .map((challenge) => (
                       <ChallengeCard
@@ -582,14 +592,14 @@ const Challenges = ({ userId }) => {
                     ))}
             </div>
 
-            {((activeTab === "available" && challenges.filter((c) => !c.completed).length === 0) ||
+            {((activeTab === "active" && challenges.filter((c) => !c.completed).length === 0) ||
               (activeTab === "completed" && challenges.filter((c) => c.completed).length === 0) ||
               (activeTab === "shared" && sharedChallenges.length === 0)) &&
               !error && (
                 <div className="text-center py-12">
                   <p className="text-gray-400">
-                    {activeTab === "available"
-                      ? "No available challenges. Generate one to get started!"
+                    {activeTab === "active"
+                      ? "No active challenges. Generate one to get started!"
                       : activeTab === "shared"
                       ? "No challenges have been shared with you yet."
                       : "No completed challenges yet. Complete some challenges to see them here!"}
