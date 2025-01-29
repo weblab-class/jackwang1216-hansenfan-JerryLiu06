@@ -23,8 +23,10 @@ const ChallengeModal = ({ challengeId, onClose }) => {
 
   useEffect(() => {
     const fetchChallenge = async () => {
+      console.log("Fetching challenge with ID:", challengeId);
       try {
         const response = await get(`/api/challenge/${challengeId}`);
+        console.log("Challenge response:", response);
         setChallenge(response);
         setError(null);
       } catch (err) {
@@ -65,16 +67,6 @@ const ChallengeModal = ({ challengeId, onClose }) => {
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">{challenge.title}</h2>
             <p className="text-gray-400 mb-6">{challenge.description}</p>
-            <div className="flex items-center justify-between text-sm text-gray-400">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                <span>Due {new Date(challenge.dueDate).toLocaleDateString()}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                <span>{challenge.points} Points</span>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -154,7 +146,13 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                       className={`${
                         post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"
                       } cursor-pointer hover:underline`}
-                      onClick={() => post.challenge && setShowChallengeModal(true)}
+                      onClick={() => {
+                        console.log("Challenge clicked:", post);
+                        if (post.challenge) {
+                          console.log("Opening modal for challenge:", post.challenge);
+                          setShowChallengeModal(true);
+                        }
+                      }}
                     >
                       {post.challengeTitle}
                       {post.isProgressUpdate && " (In Progress)"}
@@ -308,7 +306,7 @@ const PointsAwardedModal = ({ points, onClose }) => {
         <div className="mt-6 flex justify-center">
           <button
             onClick={onClose}
-            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
           >
             Awesome!
           </button>

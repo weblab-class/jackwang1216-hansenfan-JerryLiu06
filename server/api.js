@@ -386,7 +386,7 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
   try {
     // Get user's own challenges
     const userChallenges = await Challenge.find({ creator: req.user._id });
-    
+
     // Get shared challenges
     const sharedChallenges = await Challenge.find({
       _id: { $in: req.user.sharedChallenges || [] },
@@ -395,7 +395,7 @@ router.get("/challenges", auth.ensureLoggedIn, async (req, res) => {
     // Combine and remove duplicates by title
     const allChallenges = [...userChallenges, ...sharedChallenges];
     const uniqueChallenges = allChallenges.reduce((acc, current) => {
-      const x = acc.find(item => item.title === current.title);
+      const x = acc.find((item) => item.title === current.title);
       if (!x) {
         return acc.concat([current]);
       }
@@ -422,14 +422,11 @@ router.post("/challenges/generate", auth.ensureLoggedIn, async (req, res) => {
     const durations = [
       { days: 1, difficulty: "Easy" },
       { days: 3, difficulty: "Medium" },
-      { days: 7, difficulty: "Hard" }
+      { days: 7, difficulty: "Hard" },
     ];
     const randomDuration = durations[Math.floor(Math.random() * durations.length)];
 
-    const challenge = await generateChallenge(
-      randomDuration.difficulty,
-      user.userProfile
-    );
+    const challenge = await generateChallenge(randomDuration.difficulty, user.userProfile);
 
     // Send the challenge data without saving to database
     res.send({
@@ -740,8 +737,8 @@ router.post("/challenges/reset/:userId", async (req, res) => {
     await Message.deleteMany({
       $or: [
         { sender: userId, type: "challenge" },
-        { recipient: userId, type: "challenge" }
-      ]
+        { recipient: userId, type: "challenge" },
+      ],
     });
 
     res.send({ message: "Successfully reset all challenges" });
@@ -772,10 +769,12 @@ router.post("/challenges/accept", auth.ensureLoggedIn, async (req, res) => {
     });
 
     await newChallenge.save();
-    
+
     // Return the populated challenge
-    const populatedChallenge = await Challenge.findById(newChallenge._id)
-      .populate("creator", "name");
+    const populatedChallenge = await Challenge.findById(newChallenge._id).populate(
+      "creator",
+      "name"
+    );
     res.send(populatedChallenge);
   } catch (err) {
     console.error("Error accepting challenge:", err);
@@ -978,6 +977,20 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
   } catch (err) {
     console.error("Error deleting challenges:", err);
     res.status(500).send({ error: "Failed to delete challenges" });
+  }
+});
+
+// Get a single challenge by ID
+router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error getting challenge:", err);
+    res.status(500).send({ error: "Could not get challenge" });
   }
 });
 
