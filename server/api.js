@@ -312,12 +312,45 @@ router.get("/messages/:userId", auth.ensureLoggedIn, async (req, res) => {
       ],
     })
       .sort({ timestamp: 1 })
-      .populate("sender")
-      .populate("recipient");
+      .populate("sender", "name")
+      .populate({
+        path: "challenge",
+        select: "title description points difficulty recipients",
+        populate: {
+          path: "recipients.user",
+          select: "name",
+        },
+      });
 
-    res.send(messages);
+    // Add status to challenge messages
+    const messagesWithStatus = messages.map((message) => {
+      if (message.type === "challenge" && message.challenge) {
+        // Find the recipient's status
+        const recipient = message.challenge.recipients.find(
+          (r) => r.user._id.toString() === req.user._id.toString()
+        );
+
+        // If this user is the recipient, use their status
+        if (recipient) {
+          message = message.toObject();
+          message.challenge.status = recipient.status;
+        } else {
+          // If this user is the sender, show the recipient's status
+          const otherRecipient = message.challenge.recipients.find(
+            (r) => r.user._id.toString() === req.params.userId.toString()
+          );
+          if (otherRecipient) {
+            message = message.toObject();
+            message.challenge.status = otherRecipient.status;
+          }
+        }
+      }
+      return message;
+    });
+
+    res.send(messagesWithStatus);
   } catch (err) {
-    console.log("Failed to get messages:", err);
+    console.error("Error getting messages:", err);
     res.status(500).send({ error: "Failed to get messages" });
   }
 });
@@ -506,6 +539,177 @@ router.post("/challenges/:challengeId/feedback", auth.ensureLoggedIn, async (req
   } catch (err) {
     console.error("Error submitting challenge feedback:", err);
     res.status(500).send({ error: "Could not submit challenge feedback" });
+  }
+});
+
+// Share a challenge with other users
+router.post("/challenges/:challengeId/share", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Check if user is the creator of the challenge
+    if (challenge.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).send({ error: "Only the creator can share this challenge" });
+    }
+
+    const { recipientIds } = req.body;
+    if (!recipientIds || !Array.isArray(recipientIds)) {
+      return res.status(400).send({ error: "Recipients list is required" });
+    }
+
+    // Add new recipients
+    const newRecipients = recipientIds.map((userId) => ({
+      user: userId,
+      status: "pending",
+    }));
+
+    // Filter out any duplicates
+    const existingUserIds = challenge.recipients.map((r) => r.user.toString());
+    const uniqueNewRecipients = newRecipients.filter(
+      (r) => !existingUserIds.includes(r.user.toString())
+    );
+
+    challenge.recipients.push(...uniqueNewRecipients);
+    await challenge.save();
+
+    // Create messages for each recipient
+    const Message = require("./models/message");
+    await Promise.all(
+      uniqueNewRecipients.map(async (recipient) => {
+        const message = new Message({
+          sender: req.user._id,
+          recipient: recipient.user,
+          content: "Shared a challenge with you!",
+          type: "challenge",
+          challenge: challenge._id,
+          timestamp: new Date(),
+        });
+        await message.save();
+
+        // Notify recipient via socket
+        const socketManager = require("./server-socket");
+        const recipientSocket = socketManager.getSocketFromUserID(recipient.user);
+        if (recipientSocket) {
+          recipientSocket.emit("message", {
+            message: await Message.findById(message._id)
+              .populate("sender", "name")
+              .populate("challenge", "title description points difficulty"),
+          });
+        }
+      })
+    );
+
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error sharing challenge:", err);
+    res.status(500).send({ error: "Failed to share challenge" });
+  }
+});
+
+// Get challenges shared with the current user
+router.get("/challenges/shared", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      "recipients.user": req.user._id,
+      "recipients.status": { $ne: "declined" }, // Don't show declined challenges
+    }).populate("creator", "name"); // Include creator's name
+
+    res.send(challenges);
+  } catch (err) {
+    console.error("Error getting shared challenges:", err);
+    res.status(500).send({ error: "Failed to get shared challenges" });
+  }
+});
+
+// Update challenge status for a recipient
+router.post("/challenges/:challengeId/status", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!status || !["accepted", "declined", "completed"].includes(status)) {
+      return res.status(400).send({ error: "Invalid status" });
+    }
+
+    const challenge = await Challenge.findById(req.params.challengeId);
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found" });
+    }
+
+    // Find and update the recipient's status
+    const recipient = challenge.recipients.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (!recipient) {
+      return res.status(403).send({ error: "You are not a recipient of this challenge" });
+    }
+
+    recipient.status = status;
+    if (status === "accepted") {
+      recipient.acceptedAt = new Date();
+    } else if (status === "completed") {
+      recipient.completedAt = new Date();
+    }
+
+    await challenge.save();
+
+    // Update the message that contains this challenge
+    const Message = require("./models/message");
+    const message = await Message.findOne({ challenge: challenge._id, recipient: req.user._id });
+    if (message) {
+      // Populate the challenge in the message response
+      const updatedMessage = await Message.findById(message._id)
+        .populate("sender", "name")
+        .populate("challenge");
+
+      // Notify via socket
+      const socketManager = require("./server-socket");
+      const senderSocket = socketManager.getSocketFromUserID(message.sender);
+      if (senderSocket) {
+        senderSocket.emit("message", updatedMessage);
+      }
+      const recipientSocket = socketManager.getSocketFromUserID(message.recipient);
+      if (recipientSocket) {
+        recipientSocket.emit("message", updatedMessage);
+      }
+    }
+
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error updating challenge status:", err);
+    res.status(500).send({ error: "Failed to update challenge status" });
+  }
+});
+
+// Reset all challenges for a user
+router.post("/challenges/reset/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Delete all challenges created by the user
+    await Challenge.deleteMany({ creator: userId });
+
+    // Remove user from all challenges they're a recipient of
+    await Challenge.updateMany(
+      { "recipients.user": userId },
+      { $pull: { recipients: { user: userId } } }
+    );
+
+    // Delete all challenge messages
+    const Message = require("./models/message");
+    await Message.deleteMany({
+      $or: [
+        { sender: userId, type: "challenge" },
+        { recipient: userId, type: "challenge" }
+      ]
+    });
+
+    res.send({ message: "Successfully reset all challenges" });
+  } catch (err) {
+    console.error("Error resetting challenges:", err);
+    res.status(500).send({ error: "Failed to reset challenges" });
   }
 });
 

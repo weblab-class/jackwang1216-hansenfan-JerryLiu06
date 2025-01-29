@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { get, post } from "../../utilities";
 import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X, Share2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
+import { socket } from "../../client-socket";
 
 const ChallengeCard = ({ challenge, onComplete, onShare }) => {
   return (
@@ -392,6 +393,20 @@ const Challenges = ({ userId }) => {
   useEffect(() => {
     loadChallenges();
     loadSharedChallenges();
+
+    // Listen for new shared challenges
+    socket.on("challenge_shared", (data) => {
+      setSharedChallenges((prev) => [...prev, data.challenge]);
+      // Show notification
+      const notification = new Notification("New Challenge Shared!", {
+        body: `${data.sharedBy} shared a challenge with you: ${data.challenge.title}`,
+      });
+    });
+
+    // Cleanup socket listener
+    return () => {
+      socket.off("challenge_shared");
+    };
   }, []);
 
   const loadChallenges = async () => {
