@@ -56,6 +56,11 @@ router.post("/posts/:postId/like", auth.ensureLoggedIn, async (req, res) => {
     }
 
     const userId = req.user._id;
+    // Check if user has already liked the post
+    if (post.likes.includes(userId)) {
+      return res.status(400).send({ error: "Already liked this post" });
+    }
+
     post.likes.push(userId);
     await post.save();
     res.send({ likes: post.likes });

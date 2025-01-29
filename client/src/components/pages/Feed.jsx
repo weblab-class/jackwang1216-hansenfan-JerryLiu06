@@ -86,21 +86,24 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   const isLiked = post.likes && post.likes.includes(userId);
 
   const handleLike = async () => {
-    if (isLiking) return;
+    if (isLiking || isLiked) return;
     setIsLiking(true);
     
     // Optimistically update the UI
     const updatedLikes = [...(post.likes || []), userId];
+    post.likes = updatedLikes; // Update the post object directly
     if (onLike) onLike(post._id, updatedLikes);
     
     try {
       const response = await apiPost(`/api/posts/${post._id}/like`);
       // Server response will confirm the update
+      post.likes = response.likes; // Update the post object with server response
       if (onLike) onLike(post._id, response.likes);
     } catch (err) {
       console.error("Error liking post:", err);
       // Revert on error
-      if (onLike) onLike(post._id, post.likes || []);
+      post.likes = post.likes.filter(id => id !== userId); // Remove the optimistic like
+      if (onLike) onLike(post._id, post.likes);
     } finally {
       setIsLiking(false);
     }
@@ -192,10 +195,10 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
           <div className="px-4 py-3 border-t border-white/10 flex items-center space-x-6">
             <button
               onClick={handleLike}
-              disabled={isLiking}
+              disabled={isLiking || isLiked}
               className={`flex items-center space-x-2 transition-colors ${
                 isLiked ? "text-pink-400" : "text-gray-400 hover:text-pink-400"
-              } ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${(isLiking || isLiked) ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
               <span>{post.likes ? post.likes.length : 0}</span>
@@ -579,7 +582,11 @@ const Feed = () => {
   const handleNewPost = async (post) => {
     try {
       const newPost = await apiPost("/api/post", post);
-      setPosts((currentPosts) => [newPost, ...currentPosts]); // Add new post to the beginning of the list
+      // Immediately update the UI with the new post
+      setPosts((currentPosts) => {
+        const updatedPosts = [newPost, ...currentPosts];
+        return updatedPosts;
+      });
 
       // If this post was for a challenge, award points
       if (post.challenge) {
@@ -595,8 +602,14 @@ const Feed = () => {
   };
 
   const handleLike = (postId, newLikes) => {
+    // Update the posts state immediately
     setPosts((currentPosts) =>
-      currentPosts.map((post) => (post._id === postId ? { ...post, likes: newLikes } : post))
+      currentPosts.map((post) => {
+        if (post._id === postId) {
+          return { ...post, likes: newLikes };
+        }
+        return post;
+      })
     );
   };
 
