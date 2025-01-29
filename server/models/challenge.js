@@ -43,6 +43,10 @@ const ChallengeSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  pointsAwarded: {
+    type: Boolean,
+    default: false,
+  },
   deadline: Date,
   createdAt: {
     type: Date,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { get, post as apiPost } from "../../utilities";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Image as ImageIcon,
   Heart,
@@ -285,21 +285,69 @@ const ImageModal = ({ imageUrl, onClose }) => {
   );
 };
 
-const NewPostForm = ({ onSubmit }) => {
+const PointsAwardedModal = ({ points, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="text-center space-y-4">
+          <Trophy className="w-16 h-16 text-yellow-400 mx-auto" />
+          <h2 className="text-2xl font-bold text-white">Points Awarded!</h2>
+          <p className="text-gray-400">
+            Congratulations! You've earned {points} points for sharing your challenge experience.
+          </p>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+          >
+            Awesome!
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
   const [content, setContent] = useState("");
   const [image, setImage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState("");
+  const [loadingChallenge, setLoadingChallenge] = useState(true);
 
+  // Update selectedChallenge when preSelectedChallenge changes
   useEffect(() => {
-    // Fetch user's active challenges when component mounts
+    if (preSelectedChallenge) {
+      setSelectedChallenge(preSelectedChallenge);
+    }
+  }, [preSelectedChallenge]);
+
+  // Fetch challenges and validate preSelectedChallenge
+  useEffect(() => {
     const loadChallenges = async () => {
       try {
+        setLoadingChallenge(true);
         const challenges = await get("/api/challenges");
         setChallenges(challenges);
+
+        if (preSelectedChallenge) {
+          const challenge = challenges.find((c) => c._id === preSelectedChallenge);
+          if (!challenge) {
+            console.warn("Pre-selected challenge not found:", preSelectedChallenge);
+            setSelectedChallenge("");
+          }
+        }
       } catch (err) {
         console.error("Error loading challenges:", err);
+      } finally {
+        setLoadingChallenge(false);
       }
     };
     loadChallenges();
@@ -341,73 +389,79 @@ const NewPostForm = ({ onSubmit }) => {
   return (
     <div className="relative">
       <div className="bg-[#12141A]/90 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 space-y-6 shadow-2xl hover:border-purple-500/30 hover:shadow-purple-500/10 transition-all duration-300">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share your boldness..."
-            className="w-full px-5 py-4 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 resize-none transition-all duration-200"
-            rows="3"
-          />
-          <div className="space-y-3">
-            <div className="flex gap-4">
-              <select
-                value={selectedChallenge}
-                onChange={(e) => setSelectedChallenge(e.target.value)}
-                className="flex-1 px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
-                required
-              >
-                <option value="">Select a challenge</option>
-                {challenges.map((challenge) => (
-                  <option key={challenge._id} value={challenge._id}>
-                    {challenge.title} {challenge.completed ? "✓" : "⌛️"}
-                  </option>
-                ))}
-              </select>
+        {loadingChallenge ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Share your boldness..."
+              className="w-full px-5 py-4 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 resize-none transition-all duration-200"
+              rows="3"
+            />
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                <select
+                  value={selectedChallenge}
+                  onChange={(e) => setSelectedChallenge(e.target.value)}
+                  className="flex-1 px-5 py-3 bg-white/5 text-white placeholder-gray-400 rounded-xl border border-purple-500/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 transition-all duration-200"
+                  required
+                >
+                  <option value="">Select a challenge</option>
+                  {challenges.map((challenge) => (
+                    <option key={challenge._id} value={challenge._id}>
+                      {challenge.title} {challenge.completed ? "✓" : "⌛️"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {!selectedChallenge && content.trim() && (
+                <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
+                  <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
+                  Select a challenge to continue
+                </p>
+              )}
             </div>
-            {!selectedChallenge && content.trim() && (
+            <div className="flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => document.getElementById("image-input").click()}
+                className={`flex items-center space-x-2 px-5 py-3 rounded-xl border shadow-sm shadow-purple-500/10 transition-all duration-300 ${
+                  image
+                    ? "bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/40 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
+                    : "bg-white/5 text-gray-400 border-purple-500/10 hover:bg-white/15 hover:border-purple-500/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+                <span>{image ? "Image Selected" : "Add Image (Required)"}</span>
+              </button>
+              <button
+                type="submit"
+                disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
+                className="px-8 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
+              >
+                {isSubmitting ? "Posting..." : "Post"}
+              </button>
+            </div>
+            <input
+              id="image-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
+              className="hidden"
+              required
+            />
+            {!image && content.trim() && (
               <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
                 <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
-                Select a challenge to continue
+                Please add an image to your post
               </p>
             )}
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => document.getElementById("image-input").click()}
-              className={`flex items-center space-x-2 px-5 py-3 rounded-xl border shadow-sm shadow-purple-500/10 transition-all duration-300 ${
-                image
-                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/40 hover:border-purple-500/50 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
-                  : "bg-white/5 text-gray-400 border-purple-500/10 hover:bg-white/15 hover:border-purple-500/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
-              }`}
-            >
-              <ImageIcon className="w-4 h-4" />
-              <span>{image ? "Image Selected" : "Add Image (Required)"}</span>
-            </button>
-            <button
-              type="submit"
-              disabled={!content.trim() || !image || !selectedChallenge || isSubmitting}
-              className="px-8 py-3 bg-gradient-to-r from-purple-500/90 to-pink-500/90 text-white font-medium rounded-xl shadow-md shadow-purple-500/20 hover:from-purple-500 hover:to-pink-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none"
-            >
-              {isSubmitting ? "Posting..." : "Post"}
-            </button>
-          </div>
-          <input
-            id="image-input"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImage(e.target.files[0])}
-            className="hidden"
-            required
-          />
-          {!image && content.trim() && (
-            <p className="text-yellow-500/90 text-sm pl-2 flex items-center gap-2">
-              <span className="block w-1 h-1 rounded-full bg-yellow-500"></span>
-              Please add an image to your post
-            </p>
-          )}
-        </form>
+          </form>
+        )}
         {image && (
           <div className="relative rounded-xl overflow-hidden group/image shadow-sm shadow-purple-500/10">
             <div className="aspect-[16/9]">
@@ -432,6 +486,10 @@ const NewPostForm = ({ onSubmit }) => {
 };
 
 const Feed = () => {
+  const [searchParams] = useSearchParams();
+  const challengeId = searchParams.get("challenge");
+  const [showPointsModal, setShowPointsModal] = useState(false);
+  const [awardedPoints, setAwardedPoints] = useState(0);
   const [posts, setPosts] = useState([]);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -495,6 +553,15 @@ const Feed = () => {
     try {
       const newPost = await apiPost("/api/post", post);
       setPosts((currentPosts) => [newPost, ...currentPosts]); // Add new post to the beginning of the list
+
+      // If this post was for a challenge, award points
+      if (post.challenge) {
+        const response = await apiPost(`/api/challenges/${post.challenge}/award-points`);
+        if (response.pointsAwarded) {
+          setAwardedPoints(response.pointsAwarded);
+          setShowPointsModal(true);
+        }
+      }
     } catch (err) {
       console.error("Error creating post:", err);
     }
@@ -516,7 +583,7 @@ const Feed = () => {
     <div className="min-h-screen bg-[#0A0B0F] pt-16">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <NewPostForm onSubmit={handleNewPost} />
+        <NewPostForm onSubmit={handleNewPost} preSelectedChallenge={challengeId} />
         <div className="space-y-6 mt-8">
           {posts.map((post, index) => {
             if (posts.length === index + 1) {
@@ -549,6 +616,15 @@ const Feed = () => {
           )}
         </div>
       </div>
+      {showPointsModal && (
+        <PointsAwardedModal
+          points={awardedPoints}
+          onClose={() => {
+            setShowPointsModal(false);
+            setAwardedPoints(0);
+          }}
+        />
+      )}
       <Tutorial />
     </div>
   );

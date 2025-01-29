@@ -3,6 +3,7 @@ import { get, post } from "../../utilities";
 import { Trophy, Star, Clock, Sparkles, AlertCircle, CheckCircle2, X, Share2 } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import { socket } from "../../client-socket";
+import { useNavigate } from "react-router-dom";
 
 const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) => {
   return (
@@ -434,7 +435,51 @@ const FeedbackModal = ({ challenge, feedback, setFeedback, onSubmit, onClose }) 
   );
 };
 
+const PointsVerificationModal = ({ challenge, onAccept, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#1C1F26] rounded-xl p-6 max-w-lg w-full mx-4 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <X className="w-5 h-5" />
+        </button>
+
+        <h2 className="text-2xl font-bold text-white mb-4">Earn Points for Your Challenge!</h2>
+
+        <div className="space-y-4 mb-6">
+          <p className="text-gray-400">
+            Great job completing the challenge! Would you like to earn {challenge.points} points by creating a post about your experience?
+          </p>
+          <div className="bg-white/5 p-4 rounded-lg">
+            <p className="text-sm text-gray-400">
+              To earn points:
+              <br />1. Create a post about this challenge
+              <br />2. Share your experience and insights
+              <br />3. Get your points automatically once posted!
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-white bg-white/5 hover:bg-white/10 transition-colors"
+          >
+            Maybe Later
+          </button>
+          <button
+            onClick={onAccept}
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-colors"
+          >
+            Create Post
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Challenges = ({ userId }) => {
+  const navigate = useNavigate();
   const [challenges, setChallenges] = useState([]);
   const [sharedChallenges, setSharedChallenges] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -453,6 +498,7 @@ const Challenges = ({ userId }) => {
   });
   const [shareChallengeModal, setShareChallengeModal] = useState(null);
   const [selectedSharedChallenge, setSelectedSharedChallenge] = useState(null);
+  const [showPointsModal, setShowPointsModal] = useState(false);
 
   useEffect(() => {
     loadChallenges();
@@ -544,12 +590,8 @@ const Challenges = ({ userId }) => {
         setSharedChallenges((prev) => prev.filter((c) => c._id !== challenge._id));
       } else {
         // Handle completing own challenge
-        const updatedChallenge = await post(`/api/challenges/${challenge._id}/complete`);
-        if (updatedChallenge) {
-          setSelectedChallenge(challenge);
-          setShowFeedbackModal(true);
-          await loadChallenges();
-        }
+        setSelectedChallenge(challenge);
+        setShowFeedbackModal(true);
       }
     } catch (err) {
       console.error(err);
@@ -561,18 +603,23 @@ const Challenges = ({ userId }) => {
     try {
       await post(`/api/challenges/${selectedChallenge._id}/feedback`, feedback);
       setShowFeedbackModal(false);
-      setSelectedChallenge(null);
-      setFeedback({
-        rating: 5,
-        enjoymentLevel: 5,
-        productivityScore: 5,
-        timeSpent: 30,
-        feedback: "",
-      });
-      loadChallenges();
+      // Show points verification modal after feedback
+      setShowPointsModal(true);
     } catch (err) {
       console.log(err);
       setError("Failed to submit feedback");
+    }
+  };
+
+  const handleAcceptPoints = async () => {
+    try {
+      // Mark challenge as completed but don't award points yet
+      await post(`/api/challenges/${selectedChallenge._id}/complete`);
+      // Redirect to feed page using React Router
+      navigate(`/feed?challenge=${selectedChallenge._id}`);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to process challenge completion");
     }
   };
 
@@ -800,6 +847,18 @@ const Challenges = ({ userId }) => {
                 timeSpent: 30,
                 feedback: "",
               });
+            }}
+          />
+        )}
+
+        {showPointsModal && selectedChallenge && (
+          <PointsVerificationModal
+            challenge={selectedChallenge}
+            onAccept={handleAcceptPoints}
+            onClose={() => {
+              setShowPointsModal(false);
+              setSelectedChallenge(null);
+              loadChallenges();
             }}
           />
         )}

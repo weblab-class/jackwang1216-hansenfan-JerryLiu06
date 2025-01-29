@@ -441,21 +441,47 @@ router.post("/challenges/:challengeId/complete", auth.ensureLoggedIn, async (req
       return res.status(404).send({ error: "Challenge not found" });
     }
 
+    // Only mark as completed, don't award points yet
     challenge.completed = true;
     challenge.completedAt = new Date();
+    challenge.pointsAwarded = false; // New field to track if points have been awarded
     await challenge.save();
 
-    // Update user's total points
+    res.send(challenge);
+  } catch (err) {
+    console.error("Error completing challenge:", err);
+    res.status(500).send({ error: "Could not complete challenge" });
+  }
+});
+
+router.post("/challenges/:challengeId/award-points", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const challenge = await Challenge.findOne({
+      _id: req.params.challengeId,
+      creator: req.user._id,
+      completed: true,
+      pointsAwarded: false,
+    });
+
+    if (!challenge) {
+      return res.status(404).send({ error: "Challenge not found or points already awarded" });
+    }
+
+    // Award points to user
     const user = await User.findById(req.user._id);
     if (user) {
       user.points = (user.points || 0) + challenge.points;
       await user.save();
     }
 
-    res.send(challenge);
+    // Mark points as awarded
+    challenge.pointsAwarded = true;
+    await challenge.save();
+
+    res.send({ pointsAwarded: challenge.points });
   } catch (err) {
-    console.error("Error completing challenge:", err);
-    res.status(500).send({ error: "Could not complete challenge" });
+    console.error("Error awarding points:", err);
+    res.status(500).send({ error: "Could not award points" });
   }
 });
 
