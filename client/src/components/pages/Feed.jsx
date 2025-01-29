@@ -89,6 +89,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
+  const [comments, setComments] = useState(post.comments || []);
   const formattedDate = new Date(post.timestamp).toLocaleDateString();
   const isLiked = post.likes && post.likes.includes(userId);
 
@@ -112,6 +113,7 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
     setIsCommenting(true);
     try {
       const response = await apiPost(`/api/posts/${post._id}/comment`, { content: newComment });
+      setComments(response.comments);
       if (onComment) onComment(post._id, response.comments);
       setNewComment("");
     } catch (err) {
@@ -210,13 +212,16 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="flex-1 px-4 py-2 bg-white/5 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 hover:bg-white/10 hover:border-purple-500/30 resize-none transition-all duration-200"
+                  placeholder="Write a comment..."
+                  className="flex-1 bg-white/5 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  disabled={isCommenting}
                 />
                 <button
                   type="submit"
-                  disabled={!newComment.trim() || isCommenting}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isCommenting || !newComment.trim()}
+                  className={`px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors ${
+                    isCommenting || !newComment.trim() ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   Post
                 </button>
@@ -224,25 +229,24 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
 
               {/* Comments List */}
               <div className="space-y-3">
-                {post.comments &&
-                  post.comments.map((comment, index) => (
-                    <div key={index} className="flex space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
-                        {comment.creator_name[0]}
-                      </div>
-                      <div className="flex-1 bg-white/5 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-white">
-                            {comment.creator_name}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {new Date(comment.timestamp).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-300">{comment.content}</p>
-                      </div>
+                {comments.map((comment, index) => (
+                  <div key={index} className="flex space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
+                      {comment.creator_name[0]}
                     </div>
-                  ))}
+                    <div className="flex-1 bg-white/5 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-white">
+                          {comment.creator_name}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {new Date(comment.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-300">{comment.content}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -335,10 +339,10 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
       try {
         setLoadingChallenge(true);
         const challenges = await get("/api/challenges");
-        
+
         // Remove duplicates by title
         const uniqueChallenges = challenges.reduce((acc, current) => {
-          const x = acc.find(item => item.title === current.title);
+          const x = acc.find((item) => item.title === current.title);
           if (!x) {
             return acc.concat([current]);
           } else {
@@ -352,7 +356,10 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
         if (preSelectedChallenge) {
           const challenge = uniqueChallenges.find((c) => c._id === preSelectedChallenge);
           if (!challenge || challenge.pointsAwarded) {
-            console.warn("Pre-selected challenge not found or points already awarded:", preSelectedChallenge);
+            console.warn(
+              "Pre-selected challenge not found or points already awarded:",
+              preSelectedChallenge
+            );
             setSelectedChallenge("");
           }
         }
@@ -424,7 +431,7 @@ const NewPostForm = ({ onSubmit, preSelectedChallenge }) => {
                 >
                   <option value="">Select a challenge</option>
                   {challenges
-                    .filter(challenge => !challenge.pointsAwarded)
+                    .filter((challenge) => !challenge.pointsAwarded)
                     .map((challenge) => (
                       <option key={challenge._id} value={challenge._id}>
                         {challenge.title} {challenge.completed ? "✓" : "⌛️"}
