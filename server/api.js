@@ -563,6 +563,19 @@ router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+// Get leaderboard data
+router.get("/leaderboard", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const users = await User.find({}, 'name points')
+      .sort({ points: -1 })
+      .limit(100);
+    res.send(users);
+  } catch (err) {
+    console.error("Error getting leaderboard data:", err);
+    res.status(500).send({ error: "Failed to get leaderboard data" });
+  }
+});
+
 // One-time cleanup endpoint - will be removed after use
 router.delete("/admin/challenges/cleanup", async (req, res) => {
   try {
