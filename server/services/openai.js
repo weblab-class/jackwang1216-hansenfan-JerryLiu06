@@ -178,6 +178,7 @@ ${Array.from(userPreferences.commonKeywords.entries())
         },
       ],
       temperature: 1.0,
+      max_tokens: 2048,
     });
 
     const response = completion.choices[0].message.content;
