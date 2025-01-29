@@ -122,118 +122,53 @@ const analyzeUserPreferences = async (userId) => {
 const recentChallenges = new Set();
 const MAX_RECENT_CHALLENGES = 50; // Keep track of last 50 challenges
 
-const generateChallenge = async (difficulty = "Intermediate", userId = null) => {
+const generateChallenge = async (userId) => {
   if (!openai) {
     throw new Error("OpenAI API key not configured");
   }
 
   try {
-    console.log("Generating challenge with difficulty:", difficulty);
+    console.log("Generating challenge");
 
     const userPreferences = userId ? await analyzeUserPreferences(userId) : null;
 
-    // Define challenge categories
-    const challengeCategories = [
-      "Physical Activity",
-      "Mental Health",
-      "Learning",
-      "Social Connection",
-      "Creativity",
-      "Productivity",
-      "Personal Growth",
-      "Mindfulness",
-      "Environmental Impact",
-      "Community Service"
-    ];
-
-    let systemPrompt =
-      "Generate a unique and creative challenge that pushes people out of their comfort zone while being safe and appropriate. Follow these guidelines:\n" +
-      "1. The challenge should be specific, actionable, and measurable\n" +
-      "2. Avoid generic or commonly repeated challenges\n" +
-      "3. Include unexpected twists or creative combinations of activities\n" +
-      "4. Focus on personal growth and meaningful impact\n" +
-      "5. The challenge duration should be either 1 day (easy), 3 days (medium), or 7 days/1 week (hard)\n" +
-      "6. The title MUST start with the duration (e.g., '1-Day: [Challenge Name]', '3-Day: [Challenge Name]', or '7-Day: [Challenge Name]').\n" +
-      "7. Make sure to explicitly mention the duration in the challenge description\n" +
-      "8. Choose from these diverse categories: " +
-      challengeCategories.join(", ") +
-      "\n\nRecently generated challenges to AVOID similarity with:\n" +
-      Array.from(recentChallenges).slice(0, 3).map(title => `- ${title}`).join("\n");
-
-    if (userPreferences) {
-      systemPrompt += `\n\nConsider the following user preferences:
-- Preferred difficulty levels: ${Array.from(userPreferences.preferredDifficulty).join(", ")}
-- Average time spent on challenges: ${Math.round(userPreferences.avgTimeSpent)} minutes
-- Average enjoyment level: ${userPreferences.avgEnjoyment.toFixed(1)}/5
-- Average productivity score: ${userPreferences.avgProductivity.toFixed(1)}/5
-
-Examples of challenges they enjoyed:
-${userPreferences.highlyRatedDescriptions
-  .slice(0, 2)
-  .map((desc) => "- " + desc)
-  .join("\n")}
-
-Their feedback on favorite challenges:
-${userPreferences.userFeedbackSummary
-  .slice(0, 2)
-  .map((fb) => `- ${fb.challenge}: "${fb.feedback}"`)
-  .join("\n")}
-
-Common themes from their feedback:
-${Array.from(userPreferences.feedbackThemes.entries())
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5)
-  .map(([word, score]) => word)
-  .join(", ")}
-
-Popular themes in their highly-rated challenges:
-${Array.from(userPreferences.commonKeywords.entries())
-  .sort((a, b) => b[1] - a[1])
-  .slice(0, 5)
-  .map(([word, score]) => word)
-  .join(", ")}`;
-    }
-
-    const completion = await openai.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Generate a ${difficulty.toLowerCase()} difficulty challenge with the following duration:
-${difficulty === "Easy" ? "1 day" : difficulty === "Medium" ? "3 days" : "7 days/1 week"}.
-The response should be in JSON format with title, description, and challengeType fields.
-Make sure to explicitly mention the duration in both the title and description.
-Example title format: "1-Day: Practice Public Speaking", "3-Day: Learn a New Recipe", "7-Day: Daily Meditation"`,
-        },
+          content: `You are a challenge generator for an app called Boldly that helps users break out of their comfort zones.
+          Generate a challenge that:
+          1. Encourages users to try something new
+          2. Is specific and actionable
+          3. Can be completed within the time limit
+          4. Is safe and appropriate
+          5. Uses proper capitalization (especially the word "Challenge" should always be capitalized)
+          
+          Format:
+          {
+            "title": "X-Day: [Challenge Name] Challenge", // Always capitalize Challenge and use proper title case
+            "description": "[2-3 sentences describing the challenge]",
+            "difficulty": "Easy|Medium|Hard",
+            "points": number between 5-15,
+            "duration": number of days between 1-7
+          }`
+        }
       ],
-      temperature: 1.2, // Increased for more creativity
-      max_tokens: 2048,
+      temperature: 0.7,
     });
 
-    const response = completion.choices[0].message.content;
-    console.log("Generated challenge:", response);
+    const challenge = JSON.parse(response.choices[0].message.content);
 
-    try {
-      const challenge = JSON.parse(response);
-
-      // Add to recent challenges and maintain max size
-      recentChallenges.add(challenge.title);
-      if (recentChallenges.size > MAX_RECENT_CHALLENGES) {
-        const firstItem = recentChallenges.values().next().value;
-        recentChallenges.delete(firstItem);
-      }
-
-      challenge.points = calculatePersonalizedPoints(challenge, userPreferences);
-      challenge.difficulty = difficulty;
-      return challenge;
-    } catch (err) {
-      console.log("Error parsing challenge JSON:", err);
-      throw new Error("Failed to parse challenge response");
+    // Add to recent challenges and maintain max size
+    recentChallenges.add(challenge.title);
+    if (recentChallenges.size > MAX_RECENT_CHALLENGES) {
+      const firstItem = recentChallenges.values().next().value;
+      recentChallenges.delete(firstItem);
     }
+
+    challenge.points = calculatePersonalizedPoints(challenge, userPreferences);
+    return challenge;
   } catch (err) {
     console.error("Error generating challenge:", err);
     throw err;

@@ -11,16 +11,23 @@ const ChallengeCard = ({ challenge, onComplete, onShare, isSharedChallenge }) =>
       <div className="relative h-full bg-[#1C1F26] rounded-xl p-6 flex flex-col">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
-                {challenge.points} pts
-              </span>
-              <span className={`text-sm px-2 py-1 rounded-lg ${
-                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-                "bg-red-500/10 text-red-400"
-              }`}>
+            <h3 className="text-base font-semibold text-white truncate max-w-[70%]">
+              {challenge.title.replace(/challenge/i, 'Challenge')}
+            </h3>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 whitespace-nowrap">
+                <Trophy className="w-3.5 h-3.5 mr-1" />
+                <span>{challenge.points} pts</span>
+              </div>
+              <span
+                className={`text-sm px-2 py-1 rounded-lg whitespace-nowrap ${
+                  challenge.difficulty === "Easy"
+                    ? "bg-green-500/10 text-green-400"
+                    : challenge.difficulty === "Medium"
+                    ? "bg-yellow-500/10 text-yellow-400"
+                    : "bg-red-500/10 text-red-400"
+                }`}
+              >
                 {challenge.difficulty}
               </span>
             </div>
@@ -92,7 +99,7 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose, isSharedChalle
 
         <div className="space-y-4 mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
+            <h3 className="text-lg font-semibold text-white">{challenge.title.replace(/challenge/i, 'Challenge')}</h3>
             <p className="text-gray-400">{challenge.description}</p>
           </div>
 
@@ -101,11 +108,15 @@ const ChallengeModal = ({ challenge, onAccept, onReject, onClose, isSharedChalle
               <span className="px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
                 {challenge.points} pts
               </span>
-              <span className={`px-2 py-1 rounded-lg ${
-                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-                "bg-red-500/10 text-red-400"
-              }`}>
+              <span
+                className={`px-2 py-1 rounded-lg ${
+                  challenge.difficulty === "Easy"
+                    ? "bg-green-500/10 text-green-400"
+                    : challenge.difficulty === "Medium"
+                    ? "bg-yellow-500/10 text-yellow-400"
+                    : "bg-red-500/10 text-red-400"
+                }`}
+              >
                 {challenge.difficulty}
               </span>
             </div>
@@ -226,7 +237,7 @@ const ShareChallengeModal = ({ challenge, onClose }) => {
         </div>
 
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">{challenge.title}</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">{challenge.title.replace(/challenge/i, 'Challenge')}</h3>
           <p className="text-gray-400">{challenge.description}</p>
         </div>
 
@@ -523,7 +534,9 @@ const Challenges = ({ userId }) => {
     try {
       if (activeTab === "shared") {
         // Handle accepting/declining shared challenge
-        const action = window.confirm("Do you want to accept this challenge?") ? "accept" : "decline";
+        const action = window.confirm("Do you want to accept this challenge?")
+          ? "accept"
+          : "decline";
         const response = await post(`/api/challenges/${challenge._id}/${action}`);
         if (action === "accept") {
           setChallenges((prev) => [response, ...prev]);
@@ -697,16 +710,23 @@ const Challenges = ({ userId }) => {
                       <div className="relative h-full bg-[#1C1F26] rounded-xl p-6 flex flex-col">
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">{challenge.title}</h3>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400">
-                                {challenge.points} pts
-                              </span>
-                              <span className={`text-sm px-2 py-1 rounded-lg ${
-                                challenge.difficulty === "Easy" ? "bg-green-500/10 text-green-400" :
-                                challenge.difficulty === "Medium" ? "bg-yellow-500/10 text-yellow-400" :
-                                "bg-red-500/10 text-red-400"
-                              }`}>
+                            <h3 className="text-base font-semibold text-white truncate max-w-[70%]">
+                              {challenge.title.replace(/challenge/i, 'Challenge')}
+                            </h3>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center text-sm px-2 py-1 rounded-lg bg-blue-500/10 text-blue-400 whitespace-nowrap">
+                                <Trophy className="w-3.5 h-3.5 mr-1" />
+                                <span>{challenge.points} pts</span>
+                              </div>
+                              <span
+                                className={`text-sm px-2 py-1 rounded-lg whitespace-nowrap ${
+                                  challenge.difficulty === "Easy"
+                                    ? "bg-green-500/10 text-green-400"
+                                    : challenge.difficulty === "Medium"
+                                    ? "bg-yellow-500/10 text-yellow-400"
+                                    : "bg-red-500/10 text-red-400"
+                                }`}
+                              >
                                 {challenge.difficulty}
                               </span>
                             </div>
