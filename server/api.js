@@ -941,6 +941,84 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   }
 });
 
+router.get("/profile/:userId", auth.ensureLoggedIn, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    // Get user's completed challenges count
+    const completedChallenges = await Challenge.countDocuments({
+      creator: user._id,
+      completed: true,
+    });
+
+    // Get user's current streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const lastCompletedChallenge = await Challenge.findOne({
+      creator: user._id,
+      completed: true,
+      completedAt: { $exists: true },
+    }).sort({ completedAt: -1 });
+
+    let currentStreak = 0;
+    if (lastCompletedChallenge) {
+      const lastCompletedDate = new Date(lastCompletedChallenge.completedAt);
+      lastCompletedDate.setHours(0, 0, 0, 0);
+      if (lastCompletedDate.getTime() === today.getTime() || lastCompletedDate.getTime() === yesterday.getTime()) {
+        // Count backwards from the last completion date
+        const streakStart = new Date(lastCompletedDate);
+        while (true) {
+          const challengeOnDate = await Challenge.findOne({
+            creator: user._id,
+            completed: true,
+            completedAt: {
+              $gte: streakStart,
+              $lt: new Date(streakStart.getTime() + 24 * 60 * 60 * 1000),
+            },
+          });
+          if (!challengeOnDate) break;
+          currentStreak++;
+          streakStart.setDate(streakStart.getDate() - 1);
+        }
+      }
+    }
+
+    // Get recent activity
+    const recentChallenges = await Challenge.find({
+      creator: user._id,
+      completed: true,
+    })
+      .sort({ completedAt: -1 })
+      .limit(5);
+
+    const recentActivity = recentChallenges.map((challenge) => ({
+      type: "challenge",
+      description: `Completed challenge: ${challenge.title}`,
+      timestamp: challenge.completedAt,
+    }));
+
+    res.send({
+      _id: user._id,
+      name: user.name,
+      points: user.points,
+      completedChallenges,
+      currentStreak,
+      friends: user.friends || [],
+      friendRequests: user.friendRequests || [],
+      recentActivity,
+    });
+  } catch (err) {
+    console.error("Error getting user profile:", err);
+    res.status(500).send({ error: "Could not get user profile" });
+  }
+});
+
 router.post("/user/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

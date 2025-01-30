@@ -3,6 +3,7 @@ import { get } from "../../utilities";
 import { Trophy, Star, Users, Activity, Calendar, MessageCircle } from "lucide-react";
 import NavBar from "../modules/NavBar.jsx";
 import { UserContext } from "../App.jsx";
+import { useParams } from "react-router-dom";
 
 const StatCard = ({ icon: Icon, title, value }) => (
   <div className="relative group">
@@ -52,6 +53,7 @@ const ActivityCard = ({ activity }) => {
 };
 
 const Profile = () => {
+  const { userId: profileUserId } = useParams();
   const { user } = useContext(UserContext);
   const [profile, setProfile] = useState({
     points: 0,
@@ -60,6 +62,8 @@ const Profile = () => {
     friends: [],
     friendRequests: [],
     recentActivity: [],
+    name: "",
+    _id: "",
   });
 
   useEffect(() => {
@@ -67,12 +71,12 @@ const Profile = () => {
     // Refresh data every minute
     const interval = setInterval(loadProfile, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [profileUserId]); // Re-run when profileUserId changes
 
   const loadProfile = async () => {
     try {
       console.log("Fetching profile data...");
-      const profileData = await get("/api/profile");
+      const profileData = await get(profileUserId ? `/api/profile/${profileUserId}` : "/api/profile");
       console.log("Received profile data:", profileData);
       setProfile(profileData);
     } catch (err) {
@@ -90,12 +94,12 @@ const Profile = () => {
             <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full opacity-70 blur group-hover:opacity-100 transition-opacity" />
             <div className="relative w-24 h-24 rounded-full bg-[#12141A] border border-white/10 flex items-center justify-center">
               <span className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                {user?.name?.[0] || ""}
+                {profile.name?.[0] || ""}
               </span>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mt-6">{user?.name || "Loading..."}</h1>
-          <p className="text-sm text-gray-400 mt-1">ID: {user?._id || "Loading..."}</p>
+          <h1 className="text-3xl font-bold text-white mt-6">{profile.name || "Loading..."}</h1>
+          <p className="text-sm text-gray-400 mt-1">ID: {profile._id || "Loading..."}</p>
         </div>
 
         {/* Stats Grid */}
