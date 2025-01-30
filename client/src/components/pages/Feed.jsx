@@ -148,7 +148,9 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
     <div className="bg-[#12141A] rounded-xl p-6 shadow-lg">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="text-white font-semibold">{post.creator_name}</p>
+          <Link to={`/profile/${post.creator_id}`} className="text-white font-semibold hover:text-purple-400 transition-colors">
+            {post.creator_name}
+          </Link>
           <p className="text-gray-400 text-sm">{formattedDate}</p>
         </div>
         {post.challengeTitle && (

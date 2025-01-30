@@ -113,6 +113,7 @@ router.get("/posts", async (req, res) => {
       {
         $project: {
           _id: 1,
+          creator_id: 1,
           creator_name: 1,
           content: 1,
           // Only include first 100 chars of content for preview
@@ -904,7 +905,7 @@ router.post("/challenges/:challengeId/decline", auth.ensureLoggedIn, async (req,
 
     // Update the recipient's status to declined
     const recipientIndex = challenge.recipients.findIndex(
-      (r) => r.user.toString() === req.user._id.toString()
+      (r) => r.user._id.toString() === req.user._id.toString()
     );
     if (recipientIndex !== -1) {
       challenge.recipients[recipientIndex].status = "declined";
