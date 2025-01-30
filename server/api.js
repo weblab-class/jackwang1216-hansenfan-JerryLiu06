@@ -126,6 +126,7 @@ router.get("/posts", async (req, res) => {
               else: false 
             } 
           },
+          challenge: 1,
           challengeTitle: 1,
           timestamp: 1,
           likesCount: { $size: "$likes" },
@@ -1141,10 +1142,20 @@ router.delete("/admin/challenges/cleanup", async (req, res) => {
 // Get a single challenge by ID
 router.get("/challenge/:challengeId", auth.ensureLoggedIn, async (req, res) => {
   try {
+    console.log("Fetching challenge with ID:", req.params.challengeId);
     const challenge = await Challenge.findById(req.params.challengeId);
+    console.log("Challenge found:", challenge);
+    
     if (!challenge) {
+      console.log("Challenge not found for ID:", req.params.challengeId);
       return res.status(404).send({ error: "Challenge not found" });
     }
+    
+    console.log("Sending challenge response:", {
+      id: challenge._id,
+      title: challenge.title,
+      description: challenge.description
+    });
     res.send(challenge);
   } catch (err) {
     console.error("Error getting challenge:", err);

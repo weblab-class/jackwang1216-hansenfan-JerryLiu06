@@ -26,25 +26,38 @@ const ChallengeModal = ({ challengeId, onClose }) => {
       console.log("Fetching challenge with ID:", challengeId);
       try {
         const response = await get(`/api/challenge/${challengeId}`);
-        console.log("Challenge response:", response);
+        console.log("Challenge API response:", response);
+        if (!response) {
+          console.error("No response from challenge API");
+          setError("Failed to load challenge details - no response");
+          return;
+        }
         setChallenge(response);
         setError(null);
       } catch (err) {
         console.error("Error fetching challenge:", err);
-        setError("Failed to load challenge details");
+        setError(`Failed to load challenge details: ${err.message}`);
       } finally {
         setLoading(false);
       }
     };
 
     if (challengeId) {
+      console.log("Challenge ID present, fetching data...");
       setLoading(true);
       setError(null);
       fetchChallenge();
+    } else {
+      console.error("No challenge ID provided");
+      setError("No challenge ID provided");
+      setLoading(false);
     }
   }, [challengeId]);
 
-  if (!challengeId) return null;
+  if (!challengeId) {
+    console.log("No challengeId, returning null");
+    return null;
+  }
 
   return (
     <div
@@ -63,11 +76,13 @@ const ChallengeModal = ({ challengeId, onClose }) => {
           <LoadingSpinner />
         ) : error ? (
           <div className="text-red-400 text-center py-8">{error}</div>
-        ) : (
+        ) : challenge ? (
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">{challenge.title}</h2>
             <p className="text-gray-400 mb-6">{challenge.description}</p>
           </div>
+        ) : (
+          <div className="text-red-400 text-center py-8">Challenge data not found</div>
         )}
       </div>
     </div>
@@ -155,7 +170,10 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
         </div>
         {post.challengeTitle && (
           <button
-            onClick={() => setShowChallengeModal(true)}
+            onClick={() => {
+              console.log('Opening challenge modal for:', post.challenge);
+              setShowChallengeModal(true);
+            }}
             className="flex items-center text-sm text-blue-400 hover:text-blue-300"
           >
             <Trophy className="w-4 h-4 mr-1" />
@@ -259,7 +277,13 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
       )}
 
       {showChallengeModal && post.challenge && (
-        <ChallengeModal challengeId={post.challenge} onClose={() => setShowChallengeModal(false)} />
+        <ChallengeModal 
+          challengeId={post.challenge} 
+          onClose={() => {
+            console.log('Closing challenge modal');
+            setShowChallengeModal(false);
+          }} 
+        />
       )}
     </div>
   );
