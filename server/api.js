@@ -98,27 +98,105 @@ router.post("/posts/:postId/comment", auth.ensureLoggedIn, async (req, res) => {
 });
 
 // Get all posts
-router.get("/posts", (req, res) => {
+router.get("/posts", async (req, res) => {
   const limit = parseInt(req.query.limit) || 10;
   const skip = parseInt(req.query.skip) || 0;
 
-  Post.find({})
-    .sort({ timestamp: -1 })
-    .skip(skip)
-    .limit(limit)
-    .then((posts) => {
-      Post.countDocuments({}).then((total) => {
-        res.send({
-          posts,
-          hasMore: skip + posts.length < total,
-          total,
-        });
-      });
-    })
-    .catch((err) => {
-      console.error("Error fetching posts:", err);
-      res.status(500).send({ error: "Failed to fetch posts" });
+  console.time('posts-query');
+  
+  try {
+    // Get only essential fields and limit image URL length
+    const posts = await Post.aggregate([
+      { $sort: { timestamp: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          creator_name: 1,
+          content: 1,
+          // Only include first 100 chars of content for preview
+          contentPreview: { $substr: ["$content", 0, 100] },
+          // Only return imageUrl if it exists
+          imageUrl: { 
+            $cond: { 
+              if: { $gt: [{ $strLenCP: "$imageUrl" }, 0] }, 
+              then: true, 
+              else: false 
+            } 
+          },
+          challengeTitle: 1,
+          timestamp: 1,
+          likesCount: { $size: "$likes" },
+          commentsCount: { $size: "$comments" },
+          // Get only last 2 comments
+          recentComments: { 
+            $slice: [
+              {
+                $map: {
+                  input: { $slice: ["$comments", -2] },
+                  as: "comment",
+                  in: {
+                    creator_name: "$$comment.creator_name",
+                    content: "$$comment.content",
+                    timestamp: "$$comment.timestamp"
+                  }
+                }
+              },
+              -2
+            ]
+          }
+        }
+      }
+    ]).exec();
+
+    console.timeEnd('posts-query');
+    
+    // Transform the response to reduce size
+    const transformedPosts = posts.map(post => ({
+      ...post,
+      content: post.contentPreview + (post.content.length > 100 ? "..." : ""),
+      hasImage: post.imageUrl,
+      imageUrl: post.imageUrl ? `/api/posts/${post._id}/image` : null // We'll create this endpoint for lazy loading images
+    }));
+
+    const total = await Post.estimatedDocumentCount();
+
+    const response = {
+      posts: transformedPosts,
+      hasMore: skip + posts.length < total,
+      total
+    };
+
+    console.log('Response size:', JSON.stringify(response).length / 1024, 'KB');
+    res.send(response);
+  } catch (err) {
+    console.error("Error in posts query:", err);
+    res.status(500).send({ error: "Failed to fetch posts", details: err.message });
+  }
+});
+
+// New endpoint for lazy loading images
+router.get("/posts/:postId/image", async (req, res) => {
+  try {
+    // Add cache headers
+    res.set('Cache-Control', 'public, max-age=31557600'); // Cache for 1 year
+    res.set('Expires', new Date(Date.now() + 31557600000).toUTCString());
+
+    const post = await Post.findById(req.params.postId).select('imageUrl');
+    if (!post || !post.imageUrl) {
+      return res.status(404).send({ error: "Image not found" });
+    }
+
+    console.log("Returning image URL for post:", post._id, post.imageUrl);
+    res.send({ 
+      imageUrl: post.imageUrl,
+      originalUrl: post.imageUrl
     });
+  } catch (err) {
+    console.error("Error fetching image URL:", err);
+    res.status(500).send({ error: "Failed to fetch image URL" });
+  }
 });
 
 // Create a new post

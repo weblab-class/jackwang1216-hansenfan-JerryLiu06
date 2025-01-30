@@ -33,5 +33,17 @@ const PostSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
+// Add index on timestamp for better sort performance
+PostSchema.index({ timestamp: -1 });
+
+// Log when the index is created
+PostSchema.on('index', function(err) {
+  if (err) {
+    console.error('Post index error: %s', err);
+  } else {
+    console.log('Post indexing complete');
+  }
+});
+
 // compile model from schema
 module.exports = mongoose.model("post", PostSchema);

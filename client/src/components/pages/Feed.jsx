@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { get, post as apiPost } from "../../utilities";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -81,11 +81,40 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isCommenting, setIsCommenting] = useState(false);
-  const formattedDate = new Date(post.timestamp).toLocaleDateString();
-  const isLiked = post.likes && post.likes.includes(userId);
+  const [fullContent, setFullContent] = useState(post.content);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const formattedDate = useMemo(() => new Date(post.timestamp).toLocaleDateString(), [post.timestamp]);
+
+  // Lazy load image URL if post has an image
+  useEffect(() => {
+    if (post.hasImage && post.imageUrl && !imageUrl) {
+      setImageLoading(true);
+      setImageError(false);
+      
+      console.log("Loading image for post:", post._id);
+      get(post.imageUrl)
+        .then(response => {
+          console.log("Image response:", response);
+          if (response.imageUrl) {
+            setImageUrl(response.imageUrl);
+          } else {
+            setImageError(true);
+          }
+        })
+        .catch(err => {
+          console.error("Error loading image:", err);
+          setImageError(true);
+        })
+        .finally(() => {
+          setImageLoading(false);
+        });
+    }
+  }, [post.hasImage, post.imageUrl, post._id]);
 
   const handleLike = async () => {
-    if (isLiking || isLiked) return;
+    if (isLiking) return;
     setIsLiking(true);
     
     try {
@@ -116,147 +145,121 @@ const PostCard = ({ post, onLike, onComment, userId }) => {
   };
 
   return (
-    <>
-      <div className="relative group">
-        <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl opacity-100 blur-md group-hover:from-purple-500/20 group-hover:to-pink-500/20 group-hover:opacity-100 transition-all duration-500"></div>
-        <div className="bg-[#12141A] backdrop-blur-sm rounded-xl border border-purple-500/10 p-6 space-y-6 shadow-2xl relative group-hover:border-purple-500/30 group-hover:shadow-purple-500/10 transition-all duration-300">
-          {/* Post Header */}
-          <div className="p-4 flex items-center space-x-3 border-b border-white/10">
-            <Link
-              to={`/profile/${post.creator_id}`}
-              className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-medium hover:scale-105 transition-transform"
-            >
-              {post.creator_name[0]}
-            </Link>
-            <div>
-              <Link
-                to={`/profile/${post.creator_id}`}
-                className="font-medium text-white hover:text-purple-400 transition-colors"
-              >
-                {post.creator_name}
-              </Link>
-              <div className="flex items-center space-x-2 text-sm text-gray-400">
-                <Calendar className="w-4 h-4" />
-                <span>{formattedDate}</span>
-                {post.challengeTitle && (
-                  <>
-                    <span className="mx-1">•</span>
-                    <Trophy className="w-4 h-4 text-yellow-500" />
-                    <span
-                      className={`${
-                        post.isProgressUpdate ? "text-blue-400" : "text-yellow-500"
-                      } cursor-pointer hover:underline`}
-                      onClick={() => {
-                        console.log("Challenge clicked:", post);
-                        if (post.challenge) {
-                          console.log("Opening modal for challenge:", post.challenge);
-                          setShowChallengeModal(true);
-                        }
-                      }}
-                    >
-                      {post.challengeTitle}
-                      {post.isProgressUpdate && " (In Progress)"}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Post Content */}
-          <div className="p-4 space-y-4">
-            <p className="text-gray-200">{post.content}</p>
-            {post.imageUrl && (
-              <div
-                className="relative rounded-lg overflow-hidden cursor-pointer"
-                onClick={() => setShowImageModal(true)}
-              >
-                <img
-                  src={post.imageUrl}
-                  alt="Post content"
-                  className="w-full max-h-[500px] object-contain hover:opacity-90 transition-opacity"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Post Actions */}
-          <div className="px-4 py-3 border-t border-white/10 flex items-center space-x-6">
-            <button
-              onClick={handleLike}
-              disabled={isLiking || isLiked}
-              className={`flex items-center space-x-2 transition-colors ${
-                isLiked ? "text-pink-400" : "text-gray-400 hover:text-pink-400"
-              } ${(isLiking || isLiked) ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-              <span>{post.likes ? post.likes.length : 0}</span>
-            </button>
-            <button
-              onClick={() => setShowComments(!showComments)}
-              className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>{post.comments ? post.comments.length : 0}</span>
-            </button>
-          </div>
-
-          {/* Comments Section */}
-          {showComments && (
-            <div className="px-4 py-3 border-t border-white/10 space-y-4">
-              {/* Comment Form */}
-              <form onSubmit={handleComment} className="flex space-x-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment..."
-                  className="flex-1 bg-white/5 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
-                  disabled={isCommenting}
-                />
-                <button
-                  type="submit"
-                  disabled={isCommenting || !newComment.trim()}
-                  className={`px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 transition-opacity ${
-                    isCommenting || !newComment.trim() ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  Post
-                </button>
-              </form>
-
-              {/* Comments List */}
-              <div className="space-y-3">
-                {post.comments && post.comments.map((comment, index) => (
-                  <div key={index} className="flex space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm">
-                      {comment.creator_name[0]}
-                    </div>
-                    <div className="flex-1 bg-white/5 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-white">
-                          {comment.creator_name}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(comment.timestamp).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-300">{comment.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+    <div className="bg-[#12141A] rounded-xl p-6 shadow-lg">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <p className="text-white font-semibold">{post.creator_name}</p>
+          <p className="text-gray-400 text-sm">{formattedDate}</p>
         </div>
+        {post.challengeTitle && (
+          <button
+            onClick={() => setShowChallengeModal(true)}
+            className="flex items-center text-sm text-blue-400 hover:text-blue-300"
+          >
+            <Trophy className="w-4 h-4 mr-1" />
+            {post.challengeTitle}
+          </button>
+        )}
       </div>
-      {showImageModal && (
-        <ImageModal imageUrl={post.imageUrl} onClose={() => setShowImageModal(false)} />
+
+      <p className="text-gray-200 mb-4 whitespace-pre-wrap">{fullContent}</p>
+
+      {post.hasImage && (
+        <div className="mb-4 relative min-h-[100px]">
+          {imageLoading ? (
+            <div className="w-full h-48 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center">
+              <Hourglass className="w-8 h-8 text-gray-600 animate-spin" />
+            </div>
+          ) : imageError ? (
+            <div className="w-full h-48 bg-gray-800 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <ImageIcon className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">Failed to load image</p>
+              </div>
+            </div>
+          ) : imageUrl ? (
+            <img
+              src={imageUrl}
+              alt="Post content"
+              className="rounded-lg max-h-96 w-auto cursor-pointer opacity-0 transition-opacity duration-300"
+              onClick={() => setShowImageModal(true)}
+              loading="lazy"
+              onLoad={(e) => {
+                console.log("Image loaded successfully");
+                e.target.classList.add('opacity-100');
+              }}
+              onError={(e) => {
+                console.error("Image failed to load:", imageUrl);
+                setImageError(true);
+              }}
+            />
+          ) : null}
+        </div>
       )}
-      {showChallengeModal && (
+
+      <div className="flex items-center space-x-4 text-gray-400">
+        <button
+          onClick={handleLike}
+          disabled={isLiking}
+          className={`flex items-center hover:text-red-400 ${isLiking ? 'opacity-50' : ''}`}
+        >
+          <Heart className={`w-5 h-5 mr-1`} />
+          <span>{post.likesCount || 0}</span>
+        </button>
+
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="flex items-center hover:text-blue-400"
+        >
+          <MessageCircle className="w-5 h-5 mr-1" />
+          <span>{post.commentsCount || 0}</span>
+        </button>
+      </div>
+
+      {showComments && (
+        <div className="mt-4 space-y-4">
+          {post.recentComments?.map((comment, index) => (
+            <div key={index} className="bg-[#1A1C23] rounded-lg p-3">
+              <div className="flex justify-between items-start">
+                <p className="text-white text-sm font-semibold">{comment.creator_name}</p>
+                <p className="text-gray-400 text-xs">
+                  {new Date(comment.timestamp).toLocaleDateString()}
+                </p>
+              </div>
+              <p className="text-gray-300 text-sm mt-1">{comment.content}</p>
+            </div>
+          ))}
+
+          <form onSubmit={handleComment} className="mt-4 flex">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="flex-grow bg-[#1A1C23] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isCommenting}
+            />
+            <button
+              type="submit"
+              disabled={!newComment.trim() || isCommenting}
+              className={`ml-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                (!newComment.trim() || isCommenting) ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              Post
+            </button>
+          </form>
+        </div>
+      )}
+
+      {showImageModal && imageUrl && (
+        <ImageModal imageUrl={imageUrl} onClose={() => setShowImageModal(false)} />
+      )}
+
+      {showChallengeModal && post.challenge && (
         <ChallengeModal challengeId={post.challenge} onClose={() => setShowChallengeModal(false)} />
       )}
-    </>
+    </div>
   );
 };
 
@@ -516,6 +519,7 @@ const Feed = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const POSTS_PER_PAGE = 5;
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     get("/api/whoami").then((user) => {
@@ -523,8 +527,14 @@ const Feed = () => {
         setUserId(user._id);
       }
     });
-    loadPosts();
   }, []);
+
+  useEffect(() => {
+    if (page === 0) {
+      setPosts([]); // Clear posts when resetting to page 0
+    }
+    loadPosts();
+  }, [page]);
 
   // Add intersection observer for infinite scroll
   const observer = useRef();
@@ -542,30 +552,35 @@ const Feed = () => {
     [loading, hasMore]
   );
 
-  useEffect(() => {
-    loadPosts();
-  }, [page]);
-
   const loadPosts = async () => {
     if (loading || !hasMore) {
       console.log("Skipping loadPosts - loading:", loading, "hasMore:", hasMore);
       return;
     }
     setLoading(true);
-    console.log("Loading posts - page:", page);
+    setError(null);
+    
     try {
+      console.log("Loading posts - page:", page);
       const response = await get("/api/posts", {
         limit: POSTS_PER_PAGE,
         skip: page * POSTS_PER_PAGE,
       });
-      console.log("Posts response:", response);
-      setPosts((prevPosts) => (page === 0 ? response.posts : [...prevPosts, ...response.posts]));
+      
+      setPosts((prevPosts) => {
+        // Deduplicate posts based on _id
+        const newPosts = response.posts.filter(
+          newPost => !prevPosts.some(existingPost => existingPost._id === newPost._id)
+        );
+        return [...prevPosts, ...newPosts];
+      });
+      
       setHasMore(response.hasMore);
     } catch (err) {
       console.error("Error loading posts:", err);
+      setError("Failed to load posts. Please try refreshing the page.");
     } finally {
       setLoading(false);
-      console.log("Finished loading posts");
     }
   };
 
