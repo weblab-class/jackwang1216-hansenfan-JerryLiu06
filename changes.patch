@@ -1,0 +1,9 @@
+diff --git a/server/.env b/server/.env
+deleted file mode 100644
+index f40c0d9..0000000
+--- a/server/.env
++++ /dev/null
+@@ -1,3 +0,0 @@
+-SESSION_SECRET="session-secret"
+-MONGO_SRV="mongodb+srv://jackwang:BIeu2JxdMgfZHgXr@boldly-retry.pk5xu.mongodb.net/?retryWrites=true&w=majority&appName=Boldly-Retry"
+-OPENAI_API_KEY="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"
