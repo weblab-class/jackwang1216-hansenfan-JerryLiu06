@@ -33,8 +33,9 @@ const PostSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
 });
 
-// Add index on timestamp for better sort performance
+// Add indexes for better query performance
 PostSchema.index({ timestamp: -1 });
+PostSchema.index({ creator_id: 1, timestamp: -1 });
 
 // Log when the index is created
 PostSchema.on('index', function(err) {

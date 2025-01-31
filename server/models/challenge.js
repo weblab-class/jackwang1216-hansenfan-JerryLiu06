@@ -105,4 +105,9 @@ const ChallengeSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Challenge", ChallengeSchema);
+// Add indexes for frequently queried fields
+ChallengeSchema.index({ creator: 1, completed: 1 });
+ChallengeSchema.index({ creator: 1, completed: 1, completedAt: -1 });
+ChallengeSchema.index({ completedAt: -1 });
+
+module.exports = mongoose.model("challenge", ChallengeSchema);

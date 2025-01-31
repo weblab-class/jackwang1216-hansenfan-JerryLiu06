@@ -924,28 +924,48 @@ router.post("/challenges/:challengeId/decline", auth.ensureLoggedIn, async (req,
 router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
   try {
     console.log("Getting profile data for user:", req.user._id);
-    // Get user data
-    const user = await User.findById(req.user._id).populate("friends").populate("friendRequests");
-    console.log("Found user:", user);
+    
+    // Run all queries in parallel
+    const [
+      user,
+      completedChallenges,
+      recentCompletions,
+      recentChallenges,
+      recentPosts
+    ] = await Promise.all([
+      User.findById(req.user._id).populate("friends").populate("friendRequests"),
+      Challenge.countDocuments({ creator: req.user._id, completed: true }),
+      Challenge.find({
+        creator: req.user._id,
+        completed: true,
+        completedAt: { $exists: true }
+      })
+        .sort({ completedAt: -1 })
+        .limit(10)
+        .select('completedAt'),
+      Challenge.find({
+        creator: req.user._id,
+        completed: true
+      })
+        .sort({ completedAt: -1 })
+        .limit(5)
+        .select('title completedAt'),
+      Post.find({
+        creator_id: req.user._id
+      })
+        .sort({ timestamp: -1 })
+        .limit(5)
+        .select('challengeTitle timestamp')
+    ]);
 
-    // Get completed challenges
-    const completedChallenges = await Challenge.find({
-      creator: req.user._id,
-      completed: true,
-    });
-    console.log("Found completed challenges:", completedChallenges.length);
+    console.log("Found user:", user);
+    console.log("Found completed challenges:", completedChallenges);
 
     // Calculate current streak
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-
-    const recentCompletions = await Challenge.find({
-      creator: req.user._id,
-      completed: true,
-      completedAt: { $exists: true },
-    }).sort({ completedAt: -1 });
 
     let currentStreak = 0;
     if (recentCompletions.length > 0) {
@@ -973,21 +993,6 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
       }
     }
 
-    // Get recent activity (completed challenges and posts)
-    const [recentChallenges, recentPosts] = await Promise.all([
-      Challenge.find({
-        creator: req.user._id,
-        completed: true,
-      })
-        .sort({ completedAt: -1 })
-        .limit(5),
-      Post.find({
-        creator_id: req.user._id,
-      })
-        .sort({ timestamp: -1 })
-        .limit(5),
-    ]);
-
     // Combine and sort recent activity
     const recentActivity = [
       ...recentChallenges.map((challenge) => ({
@@ -1008,8 +1013,10 @@ router.get("/profile", auth.ensureLoggedIn, async (req, res) => {
     const points = user.points || 0;
 
     res.json({
+      _id: user._id,
+      name: user.name,
       points,
-      completedChallenges: completedChallenges.length,
+      completedChallenges,
       currentStreak,
       friends: user.friends || [],
       friendRequests: user.friendRequests || [],
